@@ -1,0 +1,47 @@
+<project name="lucene" default="all" basedir=".">
+
+  <property name="src.dir"   value="src" />
+  <property name="lib.dir"   value="lib"      />
+  <property name="build.dir" value="build"    />
+
+  <target name="all" depends="war" />
+
+  <target name="compile">
+    <mkdir dir="${build.dir}/classes" />
+    <javac 
+           destdir="${build.dir}/classes"
+           debug="true"
+           verbose="false"
+           source="1.6"
+           target="1.6"
+           encoding="UTF-8"
+           fork="true"
+           deprecation="false">
+      <src path="${src.dir}/java" />
+      <include name="*.java" />
+      <classpath>
+        <fileset dir="${lib.dir}">
+          <include name="*.jar"/>
+        </fileset>
+      </classpath>
+    </javac>
+  </target>
+
+  <target name="war" depends="compile">
+    <war destfile="${build.dir}/search.war"
+         webxml="${src.dir}/web.xml">
+      <classes dir="build/classes" />
+      <lib dir="lib">
+        <include name="lucene-*.jar" />
+      </lib>
+      <fileset dir="${src.dir}">
+        <include name="*.xsl" />
+      </fileset>
+    </war>
+  </target>
+
+  <target name="clean">
+    <delete dir="${build.dir}"/>
+  </target>
+
+</project>
