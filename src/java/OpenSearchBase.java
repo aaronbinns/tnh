@@ -42,10 +42,22 @@ public class OpenSearchBase extends HttpServlet
   public static final long serialVersionUID = 0L;
 
   public static final String   NS_OPENSEARCH = "http://a9.com/-/spec/opensearchrss/1.0/";
-  public static final String   NS_ARCHIVE   = "http://web.archive.org/-/spec/opensearchrss/1.0/";
+  public static final String   NS_ARCHIVE    = "http://web.archive.org/-/spec/opensearchrss/1.0/";
 
   public static final String[] EMPTY_STRINGS = { };
   public static final String[] ALL_INDEXES   = { "" };
+
+  public static class Parameters
+  {
+    String   query;
+    int      start;
+    int      hitsPerPage;
+    int      hitsPerSite;
+    String[] sites;
+    String[] indexNames;
+    String[] collections;
+    String[] types;
+  }
 
   public DocumentBuilderFactory factory;
   
@@ -64,7 +76,12 @@ public class OpenSearchBase extends HttpServlet
       {
         long responseTime = System.nanoTime( );
         
-        Parameters p = processParameters( request );
+        Parameters p = request.getAttribute( "opensearch.parameters" );
+
+        if ( p == null )
+          {
+            // BIG problem!
+          }
         
         Document doc = buildResponseDocument( p, request );
 
@@ -83,18 +100,7 @@ public class OpenSearchBase extends HttpServlet
     */
   }
 
-  /*
-  public Parameters processParameters( HttpServletRequest request )
-  {
-    request.setCharacterEncoding("UTF-8");
-    
-    Parameters p = new Parameters( request );
-    
-    
-  }
-  */
-
-  public Document buildResponseDocument( Parameters p, HttpServletRequest request )
+  public Document buildResponseDocument( Parameters p, HttpServletRequest request, int totalResults )
     throws Exception
   {
     Document doc = factory.newDocumentBuilder().newDocument();
@@ -108,7 +114,7 @@ public class OpenSearchBase extends HttpServlet
     addNode( doc, channel, "description", p.query);
     addNode( doc, channel, "link", "" );
     
-    //    addNode( doc, channel, NS_OPENSEARCH, "totalResults", "" + p.totalResults );
+    addNode( doc, channel, NS_OPENSEARCH, "totalResults", "" + totalResults );
     addNode( doc, channel, NS_OPENSEARCH, "startIndex",   "" + p.start        );
     addNode( doc, channel, NS_OPENSEARCH, "itemsPerPage", "" + p.hitsPerPage  );
     
@@ -131,6 +137,14 @@ public class OpenSearchBase extends HttpServlet
       }
 
     return doc;
+  }
+
+  void addResponseTime( Document doc, long nanos )
+  {
+    // Assume this is the <channel/> element.
+    Element channel = (Element) doc.getDocumentElement().getFirstChild( );
+
+    addNode(doc, channel, NS_ARCHIVE, "responseTime", Double.toString( (nanos / 1000 / 1000) / 1000.0 ) );
   }
 
   void writeResponseDocument( Document doc, HttpServletResponse response )
@@ -212,18 +226,6 @@ public class OpenSearchBase extends HttpServlet
   {
     return c == 0x9 || c == 0xa || c == 0xd || (c >= 0x20 && c <= 0xd7ff)
       || (c >= 0xe000 && c <= 0xfffd) || (c >= 0x10000 && c <= 0x10ffff);
-  }
-
-  static class Parameters
-  {
-    String   query;
-    int      start;
-    int      hitsPerPage;
-    int      hitsPerSite;
-    String[] sites;
-    String[] indexNames;
-    String[] collections;
-    String[] types;
   }
 
 }
