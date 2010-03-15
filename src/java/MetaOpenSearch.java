@@ -30,7 +30,7 @@ import org.jdom.output.XMLOutputter;
  */   
 public class MetaOpenSearch
 {
-  //  public static final Logger LOG = Logger.getLogger( MetaOpenSearch.class );
+  public static final Logger LOG = Logger.getLogger( MetaOpenSearch.class.getName() );
 
   List<RemoteOpenSearchServer> slaves = new ArrayList<RemoteOpenSearchServer>( );
   long timeout = 0;
@@ -76,11 +76,11 @@ public class MetaOpenSearch
   {
     long startTime = System.currentTimeMillis( );
     
-    List<SlaveQueryThread> slaveThreads = new ArrayList<SlaveQueryThread>( this.slaves.size() );
+    List<RemoteQueryThread> slaveThreads = new ArrayList<RemoteQueryThread>( this.slaves.size() );
 
     for ( RemoteOpenSearchServer slave : this.slaves )
       {
-        SlaveQueryThread sqt = new SlaveQueryThread( slave, query, 0, (startIndex+numResults), hitsPerSite );
+        RemoteQueryThread sqt = new RemoteQueryThread( slave, query, 0, (startIndex+numResults), hitsPerSite );
 
         sqt.start( );
 
@@ -92,7 +92,7 @@ public class MetaOpenSearch
     LinkedList<Element> items = new LinkedList<Element>( );
     long totalResults = 0;
 
-    for ( SlaveQueryThread sqt : slaveThreads )
+    for ( RemoteQueryThread sqt : slaveThreads )
       {
         if ( sqt.throwable != null )
           {
@@ -110,7 +110,7 @@ public class MetaOpenSearch
           }
         catch ( Exception e ) 
           {
-            //            LOG.log( Level.SEVERE, "Error processing response from slave: " + sqt.slave, e );
+            LOG.log( Level.SEVERE, "Error processing response from slave: " + sqt.slave, e );
           }
         
       }
@@ -181,7 +181,7 @@ public class MetaOpenSearch
    * Convenience method to wait for a collection of threads to complete,
    * or until a timeout after a startTime expires.
    */
-  private void waitForThreads( List<SlaveQueryThread> threads, long timeout )
+  private void waitForThreads( List<RemoteQueryThread> threads, long timeout )
   {
     for ( Thread t : threads )
       {
@@ -256,7 +256,7 @@ public class MetaOpenSearch
 }
 
 
-class SlaveQueryThread extends Thread
+class RemoteQueryThread extends Thread
 {
   RemoteOpenSearchServer slave;
 
@@ -269,7 +269,7 @@ class SlaveQueryThread extends Thread
   Throwable       throwable;
 
 
-  SlaveQueryThread( RemoteOpenSearchServer slave, String query, int startIndex, int numResults, int hitsPerSite )
+  RemoteQueryThread( RemoteOpenSearchServer slave, String query, int startIndex, int numResults, int hitsPerSite )
   {
     this.slave       = slave;
     this.query       = query;

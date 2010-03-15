@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-package org.archive.nutchwax;
-
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -40,18 +38,21 @@ import org.jdom.output.XMLOutputter;
  */   
 public class MetaOpenSearchServlet extends HttpServlet 
 {
-  OpenSearchMaster master;
+  public static final String NS_OPENSEARCH = "http://a9.com/-/spec/opensearchrss/1.0/";
+  public static final String NS_ARCHIVE   = "http://web.archive.org/-/spec/opensearchrss/1.0/";
+ 
+  MetaOpenSearch meta;
   
   int hitsPerSite = 0;
 
   public void init( ServletConfig config )
     throws ServletException 
   {
-    String slavesFile = config.getInitParameter( "slaves" );
+    String rossFile = config.getInitParameter( "ross" );
 
-    if ( slavesFile == null || slavesFile.trim().length() == 0 )
+    if ( rossFile == null || rossFile.trim().length() == 0 )
       {
-        throw new ServletException( "Required init parameter missing: slaves" );
+        throw new ServletException( "Required init parameter missing: ross" );
       }
 
     int timeout     = getInteger( config.getInitParameter( "timeout"     ), 0 );
@@ -59,7 +60,7 @@ public class MetaOpenSearchServlet extends HttpServlet
 
     try
       {
-        this.master = new OpenSearchMaster( slavesFile, timeout );
+        this.meta = new MetaOpenSearch( rossFile, timeout );
       }
     catch ( IOException ioe )
       {
@@ -80,21 +81,21 @@ public class MetaOpenSearchServlet extends HttpServlet
 
     request.setCharacterEncoding( "UTF-8" );
 
-    String query       = getString ( request.getParameter( "query" ), "" );
-    int    startIndex  = getInteger( request.getParameter( "start" ), 0  );
-    int    numHits     = getInteger( request.getParameter( "hitsPerPage" ), 10 );
-    int    hitsPerSite = getInteger( request.getParameter( "hitsPerSite" ), this.hitsPerSite );
+    String query       = getString ( request.getParameter( "q" ), "" );
+    int    numHits     = getInteger( request.getParameter( "n" ), 10 );
+    int    startIndex  = getInteger( request.getParameter( "p" ), 0  );
+    int    hitsPerSite = getInteger( request.getParameter( "h" ), this.hitsPerSite );
 
-    Document doc = this.master.query( query, startIndex, numHits, hitsPerSite );
+    Document doc = this.meta.query( query, startIndex, numHits, hitsPerSite );
 
-    Element eUrlParams = new Element( "urlParams", Namespace.getNamespace( "http://www.nutch.org/opensearchrss/1.0/" ) );
+    Element eUrlParams = new Element( "urlParams", Namespace.getNamespace( NS_ARCHIVE ) );
 
     for ( Map.Entry<String,String[]> e : ((Map<String,String[]>) request.getParameterMap( )).entrySet( ) )
       {
         String key = e.getKey( );
         for ( String value : e.getValue( ) )
           {
-            Element eParam = new Element( "param", Namespace.getNamespace( "http://www.nutch.org/opensearchrss/1.0/" ) );
+            Element eParam = new Element( "param", Namespace.getNamespace( NS_ARCHIVE ) );
             eParam.setAttribute( "name",  key   );
             eParam.setAttribute( "value", value );
             eUrlParams.addContent( eParam );

@@ -27,7 +27,7 @@ import org.jdom.output.*;
 
 class RemoteOpenSearchServer
 {
-  //public static final Log LOG = LogFactory.getLog( RemoteOpenSearchServer.class );
+  public static final Logger LOG = Logger.getLogger( RemoteOpenSearchServer.class.getName() );
 
   private String urlTemplate;
 
@@ -44,7 +44,7 @@ class RemoteOpenSearchServer
     InputStream is = null;
     try
       {
-        //LOG.info( "Querying slave: " + url );
+        LOG.info( "Querying slave: " + url );
 
         is = getInputStream( url );
         
@@ -56,7 +56,7 @@ class RemoteOpenSearchServer
       }
     catch ( Exception e )
       {
-        //LOG.error( url.toString(), e );
+        LOG.log( Level.SEVERE, url.toString(), e );
         throw e;
       }
     finally
@@ -124,7 +124,7 @@ class RemoteOpenSearchServer
   {
     URLConnection connection = url.openConnection( );
     connection.setDoOutput( false );
-    connection.setRequestProperty( "User-Agent", "Mozilla/4.0 (compatible; NutchWAX OpenSearchMaster)" );
+    connection.setRequestProperty( "User-Agent", "Mozilla/4.0 (compatible; Internet Archive RemoteOpenSearchServer)" );
     connection.connect( );
 
     if ( connection instanceof HttpURLConnection )
