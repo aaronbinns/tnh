@@ -39,6 +39,8 @@ import org.apache.lucene.search.highlight.*;
 
 public class OpenSearchServlet extends HttpServlet
 {
+  public static final long serialVersionUID = 0L;
+
   public static final String NS_OPENSEARCH = "http://a9.com/-/spec/opensearchrss/1.0/";
   public static final String NS_ARCHIVE   = "http://web.archive.org/-/spec/opensearchrss/1.0/";
   public static final String[] EMPTY_STRINGS = { };
@@ -224,7 +226,7 @@ public class OpenSearchServlet extends HttpServlet
           }
 
         responseTime = System.nanoTime( ) - responseTime;
-        addNode(doc, channel, NS_ARCHIVE, "responseTime", Double.toString( ((long) responseTime / 1000 / 1000 ) / 1000.0 ) );
+        addNode(doc, channel, NS_ARCHIVE, "responseTime", Double.toString( (responseTime / 1000 / 1000) / 1000.0 ) );
 
         DOMSource source = new DOMSource(doc);
         TransformerFactory transFactory = TransformerFactory.newInstance();
