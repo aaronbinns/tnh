@@ -73,7 +73,7 @@ public class TestCollapse2
 
         TestScorer scorer = new TestScorer( );
 
-        CollapsingCollector2 collector = new CollapsingCollector2( fc, max, hitsPerSite );
+        CollapsingCollector collector = new CollapsingCollector( fc, max, hitsPerSite );
 
         // Dummy call to force collector to load site cache.
         collector.setNextReader( null, 0 );

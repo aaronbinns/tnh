@@ -27,7 +27,7 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 
 
-public class CollapsingCollector2 extends Collector
+public class CollapsingCollector extends Collector
 {
   public static final Comparator<Hit> SCORE_COMPARATOR = new Comparator<Hit>( )
   {
@@ -75,12 +75,12 @@ public class CollapsingCollector2 extends Collector
   int numCandidatesPassSite  = 0;
   int numCandidatesFailSite  = 0;
 
-  public CollapsingCollector2( final FieldCache siteCache, final int maxNumResults )
+  public CollapsingCollector( final FieldCache siteCache, final int maxNumResults )
   {
     this( siteCache, maxNumResults, 1 );
   }
 
-  public CollapsingCollector2( final FieldCache siteCache, final int maxNumResults, final int hitsPerSite )
+  public CollapsingCollector( final FieldCache siteCache, final int maxNumResults, final int hitsPerSite )
   {
     this.siteCache      = siteCache;
     this.maxNumResults  = maxNumResults;

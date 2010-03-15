@@ -134,7 +134,7 @@ public class Search
     if ( maxHits  <= 0    ) throw new IllegalArgumentException( "maxHits must be > 0" );
     if ( hitsPerSite < 0  ) throw new IllegalArgumentException( "hitsPerSite must be >= 0" );
 
-    CollapsingCollector2 collector = new CollapsingCollector2( this.siteCache, maxHits, hitsPerSite );
+    CollapsingCollector collector = new CollapsingCollector( this.siteCache, maxHits, hitsPerSite );
 
     searcher.search( query, collector );
 
