@@ -32,6 +32,8 @@ public class FieldCacheNoCache implements FieldCache
 
   private FieldSelector FIELD_ONLY = new FieldSelector( )
     {
+      public static final long serialVersionUID = 0L;
+
       public FieldSelectorResult accept( String fieldName )
       {
         if ( FieldCacheNoCache.this.fieldName.equals( fieldName ) )
