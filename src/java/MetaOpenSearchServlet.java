@@ -15,49 +15,33 @@
  * limitations under the License.
  */
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.io.*;
+import java.util.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
 
-import org.jdom.Document;
-import org.jdom.Element;
-import org.jdom.Namespace;
+import org.jdom.*;
 import org.jdom.output.XMLOutputter;
 
 /** 
  * 
  */   
-public class MetaOpenSearchServlet extends HttpServlet 
+public class MetaOpenSearchServlet extends HttpServlet
 {
-  public static final String NS_OPENSEARCH = "http://a9.com/-/spec/opensearchrss/1.0/";
-  public static final String NS_ARCHIVE   = "http://web.archive.org/-/spec/opensearchrss/1.0/";
- 
   MetaOpenSearch meta;
-  
-  int hitsPerSite = 0;
+
+  int timeout;
+  int hitsPerPage;
+  int hitsPerSite;
 
   public void init( ServletConfig config )
     throws ServletException 
   {
-    String rossFile = config.getInitParameter( "ross" );
+    this.timeout     = ServletHelper.getInitParameter( config, "timeout",      0,  0 );
+    this.hitsPerPage = ServletHelper.getInitParameter( config, "hitsPerPage", 10,  1 );
+    this.hitsPerSite = ServletHelper.getInitParameter( config, "hitsPerSite",  1,  0 );
 
-    if ( rossFile == null || rossFile.trim().length() == 0 )
-      {
-        throw new ServletException( "Required init parameter missing: ross" );
-      }
-
-    int timeout     = getInteger( config.getInitParameter( "timeout"     ), 0 );
-    int hitsPerSite = getInteger( config.getInitParameter( "hitsPerSite" ), 0 );
-
+    String rossFile = ServletHelper.getInitParameter( config, "ross", false );
     try
       {
         this.meta = new MetaOpenSearch( rossFile, timeout );
@@ -78,72 +62,32 @@ public class MetaOpenSearchServlet extends HttpServlet
     throws ServletException, IOException 
   {
     long responseTime = System.nanoTime( );
-
-    request.setCharacterEncoding( "UTF-8" );
-
-    String query       = getString ( request.getParameter( "q" ), "" );
-    int    numHits     = getInteger( request.getParameter( "n" ), 10 );
-    int    startIndex  = getInteger( request.getParameter( "p" ), 0  );
-    int    hitsPerSite = getInteger( request.getParameter( "h" ), this.hitsPerSite );
-
-    Document doc = this.meta.query( query, startIndex, numHits, hitsPerSite );
-
-    Element eUrlParams = new Element( "urlParams", Namespace.getNamespace( NS_ARCHIVE ) );
-
-    for ( Map.Entry<String,String[]> e : ((Map<String,String[]>) request.getParameterMap( )).entrySet( ) )
+    
+    QueryParameters p = (QueryParameters) request.getAttribute( OpenSearchHelper.PARAMS_KEY );
+    if ( p == null )
       {
-        String key = e.getKey( );
-        for ( String value : e.getValue( ) )
-          {
-            Element eParam = new Element( "param", Namespace.getNamespace( NS_ARCHIVE ) );
-            eParam.setAttribute( "name",  key   );
-            eParam.setAttribute( "value", value );
-            eUrlParams.addContent( eParam );
-          }
+        p = getQueryParameters( request );
       }
-
-    doc.getRootElement( ).getChild( "channel" ).addContent( eUrlParams );
+        
+    Document doc = meta.query( p );
 
     (new XMLOutputter()).output( doc, response.getOutputStream( ) );
   }
 
-  String getString ( String value, String defaultValue )
+  public QueryParameters getQueryParameters( HttpServletRequest request )
   {
-    if ( value != null )
-      {
-        value = value.trim();
-
-        if ( value.length( ) != 0 )
-          {
-            return value;
-          }
-      }
+    QueryParameters p = new QueryParameters( );
     
-    return defaultValue;
-  }
-
-  int getInteger( String value, int defaultValue )
-  {
-    if ( value != null )
-      {
-        value = value.trim();
-        
-        if ( value.length( ) != 0 )
-          {
-            try
-              {
-                int i = Integer.parseInt( value );
-
-                return i;
-              }
-            catch ( NumberFormatException nfe )
-              {
-                // TODO: log?
-              }
-          }
-      }
+    p.query      = ServletHelper.getParam( request, "q", "" );
+    p.start      = ServletHelper.getParam( request, "p", 0 );
+    p.hitsPerPage= ServletHelper.getParam( request, "n", this.hitsPerPage );
+    p.hitsPerSite= ServletHelper.getParam( request, "h", this.hitsPerSite );
+    p.sites      = ServletHelper.getParam( request, "s", QueryParameters.EMPTY_STRINGS );
+    p.indexNames = ServletHelper.getParam( request, "i", QueryParameters.ALL_INDEXES );
+    p.collections= ServletHelper.getParam( request, "c", QueryParameters.EMPTY_STRINGS );
+    p.types      = ServletHelper.getParam( request, "t", QueryParameters.EMPTY_STRINGS );
     
-    return defaultValue;
+    return p;
   }
 
 }
