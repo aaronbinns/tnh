@@ -17,81 +17,37 @@
 
 import java.io.*;
 import java.util.*;
+import java.util.logging.Logger;
 import javax.servlet.*;
 import javax.servlet.http.*;
-import javax.xml.parsers.*;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-import org.w3c.dom.*;
+
+import org.jdom.*;
+import org.jdom.output.XMLOutputter;
 
 import org.apache.lucene.search.*;
 import org.apache.lucene.analysis.*;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.queryParser.*;
-//import org.apache.lucene.document.*;
-import org.apache.lucene.index.*;
-import org.apache.lucene.store.NIOFSDirectory;
-import org.apache.lucene.util.Version;
 import org.apache.lucene.search.highlight.*;
 
 
 public class OpenSearchServlet extends HttpServlet
 {
-  public static final long serialVersionUID = 0L;
+  public static final Logger LOG = Logger.getLogger( OpenSearchServlet.class.getName() );
 
-  public static final String NS_OPENSEARCH = "http://a9.com/-/spec/opensearchrss/1.0/";
-  public static final String NS_ARCHIVE   = "http://web.archive.org/-/spec/opensearchrss/1.0/";
-  public static final String[] EMPTY_STRINGS = { };
-  public static final String[] ALL_INDEXES   = { "" };
-
-  private int indexDivisor = 10;
-  private int hitsPerPage  = 10;
-  private int hitsPerSite  = 1;
-
-  DefaultQueryTranslator translator;
-  Search searcher;
-  DocumentBuilderFactory factory;
+  public int    hitsPerPage;
+  public int    hitsPerSite;
+  public int    indexDivisor;
+  public String indexPath;
+  public Search searcher;
+  public DefaultQueryTranslator translator;
   
   public void init( ServletConfig config )
     throws ServletException
   {
-    String divisorString = config.getInitParameter( "indexDivisor" );
-    divisorString = divisorString == null ? "" : divisorString.trim( );
-    if ( divisorString.length() != 0 )
-      {
-        try
-          {
-            int divisor = Integer.parseInt( config.getInitParameter( "indexDivisor" ) );
+    this.hitsPerPage  = ServletHelper.getInitParameter( config, "hitsPerPage",  10, 1 );
+    this.hitsPerSite  = ServletHelper.getInitParameter( config, "hitsPerSite",   1, 0 );
+    this.indexDivisor = ServletHelper.getInitParameter( config, "indexDivisor", 10, 1 );
+    this.indexPath    = ServletHelper.getInitParameter( config, "index", false );
 
-            if ( divisor <= 0 )
-              {
-                throw new ServletException( "Error: 'indexDivisor' must be >= 0, specified value: " + divisor );
-              }
-
-            this.indexDivisor = divisor;
-
-            System.err.println( "indexDivisor: using configuration value: " + this.indexDivisor );
-          }
-        catch ( NumberFormatException nfe )
-          {
-            throw new ServletException( "Error: bad value for 'indexDivisor' in servlet config: " + divisorString ); 
-          }
-      }
-    else
-      {
-        System.err.println( "indexDivisor: using built-in default value: " + this.indexDivisor );
-      }
-
-    String indexPath = config.getInitParameter( "index" );
-    indexPath = indexPath == null ? "" : indexPath.trim( );
-
-    if ( indexPath.length( ) == 0 )
-      {
-        throw new ServletException( "No index specified." );
-      }
-    
     try
       {
         this.searcher = new Search( IndexOpener.open( indexPath, indexDivisor ) );
@@ -101,9 +57,6 @@ public class OpenSearchServlet extends HttpServlet
         throw new ServletException( ioe );
       }
     
-    this.factory = DocumentBuilderFactory.newInstance();
-    this.factory.setNamespaceAware(true);
-
     this.translator = new DefaultQueryTranslator( );
   }
 
@@ -114,107 +67,66 @@ public class OpenSearchServlet extends HttpServlet
       {
         long responseTime = System.nanoTime( );
         
-        String p;  // Temp variable for getting URL parameter values
-        
-        request.setCharacterEncoding("UTF-8");
-        
-        String   query      = getParam( request, "q", "" );
-        int      start      = getParam( request, "p", 0 );
-        int      hitsPerPage= getParam( request, "n", this.hitsPerPage );
-        int      hitsPerSite= getParam( request, "h", 1 );
-        String[] sites      = getParam( request, "s", EMPTY_STRINGS );
-        String[] indexNames = getParam( request, "i", ALL_INDEXES );
-        String[] collections= getParam( request, "c", EMPTY_STRINGS );
-        String[] types      = getParam( request, "t", EMPTY_STRINGS );
-        
-        BooleanQuery q = this.translator.translate( query );
-        System.out.println( "query: " + query );
-        System.out.println( "trans: " + q );
-        this.translator.addGroup( q, "site", sites );
-        this.translator.addGroup( q, "type", types );
-        this.translator.addGroup( q, "collection", collections );
-        System.out.println( "tran2: " + q );
+        QueryParameters p = (QueryParameters) request.getAttribute( OpenSearchHelper.PARAMS_KEY );
+        if ( p == null )
+          {
+            p = getQueryParameters( request );
+          }
 
-        Search.Result result = this.searcher.search( indexNames, q, start + (hitsPerPage*3), hitsPerSite );
-        // responseTime = System.nanoTime( ) - responseTime;
+        BooleanQuery q = this.translator.translate( p.query );
+
+        this.translator.addGroup( q, "site", p.sites );
+        this.translator.addGroup( q, "type", p.types );
+        this.translator.addGroup( q, "collection", p.collections );
+
+        Search.Result result = this.searcher.search( p.indexNames, q, p.start + (p.hitsPerPage*3), p.hitsPerSite );
 
         // The 'end' is usually just the end of the current page
         // (start+hitsPerPage); but if we are on the last page
         // of de-duped results, then the end is hits.getLength().
-        int end = Math.min( result.hits.length, start + hitsPerPage );
+        int end = Math.min( result.hits.length, p.start + p.hitsPerPage );
         
         // The length is usually just (end-start), unless the start
         // position is past the end of the results -- which is common when
         // de-duping.  The user could easily jump past the true end of the
         // de-dup'd results.  If the start is past the end, we use a
         // length of '0' to produce an empty results page.
-        int length = Math.max( end-start, 0 );
+        int length = Math.max( end-p.start, 0 );
         
         // Usually, the total results is the total number of non-de-duped
         // results.  Howerver, if we are on last page of de-duped results,
         // then we know our de-dup'd total is result.hits.length.
-        long totalResults = result.hits.length < (start+hitsPerPage) ? result.hits.length : result.numRawHits; 
-                                                                                                     
-        // Write the OpenSearch header
-        Document doc = factory.newDocumentBuilder().newDocument();
- 
-        Element rss = addNode(doc, doc, "rss");
-        addAttribute(doc, rss, "version", "2.0");
+        long totalResults = result.hits.length < (p.start+p.hitsPerPage) ? result.hits.length : result.numRawHits; 
 
-        Element channel = addNode(doc, rss, "channel");
+        Document doc = new Document( );
+
+        Element channel = OpenSearchHelper.startResponse( doc, p, request, totalResults );
         
-        addNode(doc, channel, "title", "Search: " + query );
-        addNode(doc, channel, "description", "Archival search results for query: " + query);
-        addNode(doc, channel, "link", "" );
-        
-        addNode(doc, channel, NS_OPENSEARCH, "totalResults", ""+totalResults );
-        addNode(doc, channel, NS_OPENSEARCH, "startIndex",   ""+start        );
-        addNode(doc, channel, NS_OPENSEARCH, "itemsPerPage", ""+hitsPerPage  );
-        
-        addNode(doc, channel, NS_ARCHIVE, "query", query );
-        addNode(doc, channel, NS_ARCHIVE, "luceneQuery", q.toString() );
-
-        // Add a <urlParams> element containing a list of all the URL parameters.
-        Element urlParams = doc.createElementNS( NS_ARCHIVE, "urlParams" );
-        channel.appendChild( urlParams );
-
-        for ( Map.Entry<String,String[]> e : ((Map<String,String[]>) request.getParameterMap( )).entrySet( ) )
-          {
-            String key = e.getKey( );
-            for ( String value : e.getValue( ) )
-              {
-                Element urlParam = doc.createElementNS( NS_ARCHIVE, "param" );
-                addAttribute( doc, urlParam, "name",  key   );
-                addAttribute( doc, urlParam, "value", value.trim() );
-                urlParams.appendChild(urlParam);
-              }
-          }
-
         // Add hits to XML Document
-        for ( int i = start ; i < end ; i++ )
+        for ( int i = p.start ; i < end ; i++ )
           {
             org.apache.lucene.document.Document hit = result.searcher.doc( result.hits[i].id );
 
-            Element item = addNode( doc, channel, "item" );
+            Element item = JDOMHelper.add( channel, "item" );
 
-            addNode( doc, item, "title" , hit.get( "title"  ) );
-            addNode( doc, item, "link"  , hit.get( "url"    ) );
-            addNode( doc, item, NS_ARCHIVE, "docId",  String.valueOf( result.hits[i].id    ) );
-            addNode( doc, item, NS_ARCHIVE, "score",  String.valueOf( result.hits[i].score ) );
-            addNode( doc, item, NS_ARCHIVE, "site",   result.hits[i].site  );
-            addNode( doc, item, NS_ARCHIVE, "length", hit.get( "length" ) );
-            addNode( doc, item, NS_ARCHIVE, "type",   hit.get( "type"   ) );
-            addNode( doc, item, NS_ARCHIVE, "collection", hit.get( "collection" ) );
+            JDOMHelper.add( item, "title" , hit.get( "title"  ) );
+            JDOMHelper.add( item, "link"  , hit.get( "url"    ) );
+            JDOMHelper.add( item, OpenSearchHelper.NS_ARCHIVE, "docId",      String.valueOf( result.hits[i].id    ) );
+            JDOMHelper.add( item, OpenSearchHelper.NS_ARCHIVE, "score",      String.valueOf( result.hits[i].score ) );
+            JDOMHelper.add( item, OpenSearchHelper.NS_ARCHIVE, "site",       result.hits[i].site  );
+            JDOMHelper.add( item, OpenSearchHelper.NS_ARCHIVE, "length",     hit.get( "length" ) );
+            JDOMHelper.add( item, OpenSearchHelper.NS_ARCHIVE, "type",       hit.get( "type"   ) );
+            JDOMHelper.add( item, OpenSearchHelper.NS_ARCHIVE, "collection", hit.get( "collection" ) );
             
             for ( String date : hit.getValues( "date" ) )
               {
-                addNode( doc, item, "date", date );
+                JDOMHelper.add( item, "date", date );
               }
 
             Highlighter highlighter = new Highlighter( new QueryScorer( q, "content" ) );
             
-            StringBuffer buf = new StringBuffer( 100 );
-            String       raw = hit.get( "content" );
+            StringBuilder buf = new StringBuilder( 100 );
+            String        raw = hit.get( "content" );
             raw = raw == null ? "" : raw;
             for ( String snippet : highlighter.getBestFragments( new SimpleAnalyzer( ), "content", raw, 8 ) )
               {
@@ -222,19 +134,12 @@ public class OpenSearchServlet extends HttpServlet
                 buf.append( "..." );
               }
 
-            addNode( doc, item, "description", buf.toString( ) );
+            JDOMHelper.add( item, "description", buf.toString( ) );
           }
 
-        responseTime = System.nanoTime( ) - responseTime;
-        addNode(doc, channel, NS_ARCHIVE, "responseTime", Double.toString( (responseTime / 1000 / 1000) / 1000.0 ) );
+        OpenSearchHelper.addResponseTime( channel, System.nanoTime( ) - responseTime );
 
-        DOMSource source = new DOMSource(doc);
-        TransformerFactory transFactory = TransformerFactory.newInstance();
-        Transformer transformer = transFactory.newTransformer();
-        transformer.setOutputProperty( javax.xml.transform.OutputKeys.ENCODING, "UTF-8" );
-        StreamResult sresult = new StreamResult(response.getOutputStream());
-        response.setContentType("application/rss+xml");
-        transformer.transform(source, sresult);
+        OpenSearchHelper.writeResponse( doc, response );
       }
     catch ( Exception e )
       {
@@ -242,113 +147,20 @@ public class OpenSearchServlet extends HttpServlet
       }
   }
 
-
-  private String getParam( HttpServletRequest request, String name, String defaultValue )
+  public QueryParameters getQueryParameters( HttpServletRequest request )
   {
-    String v = request.getParameter( name );
+    QueryParameters p = new QueryParameters( );
     
-    v = v == null ? defaultValue : v.trim();
-
-    return v;
-  }
-
-  private int getParam( HttpServletRequest request, String name, int defaultValue )
-  {
-    String v = request.getParameter( name );
+    p.query      = ServletHelper.getParam( request, "q", "" );
+    p.start      = ServletHelper.getParam( request, "p", 0 );
+    p.hitsPerPage= ServletHelper.getParam( request, "n", this.hitsPerPage );
+    p.hitsPerSite= ServletHelper.getParam( request, "h", this.hitsPerSite );
+    p.sites      = ServletHelper.getParam( request, "s", QueryParameters.EMPTY_STRINGS );
+    p.indexNames = ServletHelper.getParam( request, "i", QueryParameters.ALL_INDEXES );
+    p.collections= ServletHelper.getParam( request, "c", QueryParameters.EMPTY_STRINGS );
+    p.types      = ServletHelper.getParam( request, "t", QueryParameters.EMPTY_STRINGS );
     
-    v = v == null ? "" : v.trim();
-
-    if ( v.length( ) == 0 ) return defaultValue;
-
-    try
-      {
-        int i = Integer.parseInt( v );
-
-        if ( i < 0 ) return defaultValue;
-        
-        return i;
-      }
-    catch ( NumberFormatException nfe )
-      {
-        return defaultValue;
-      }
-  }
-
-  private String[] getParam( HttpServletRequest request, String name, String[] defaultValue )
-  {
-    String[] v = request.getParameterValues( name );
-    
-    v = v == null ? defaultValue : v;
-
-    return v;
-  }
-  
-  private static Element addNode(Document doc, Node parent, String name)
-  {
-    Element child = doc.createElement(name);
-    parent.appendChild(child);
-    return child;
-  }
-  
-  private static Element addNode(Document doc, Node parent, String name, String text)
-  {
-    if ( text == null ) text = "";
-    Element child = doc.createElement(name);
-    child.appendChild(doc.createTextNode(getLegalXml(text)));
-    parent.appendChild(child);
-    return child;
-  }
-  
-  private static Element addNode(Document doc, Node parent, String ns, String name, String text)
-  {
-    if ( text == null ) text = "";
-    Element child = doc.createElementNS( ns, name);
-    child.appendChild( doc.createTextNode( getLegalXml(text) ) );
-    parent.appendChild( child );
-    return child;
-  }
-
-  private static Node addAttribute(Document doc, Element node, String name, String value)
-  {
-    Attr attribute = doc.createAttribute(name);
-    attribute.setValue(getLegalXml(value));
-    node.getAttributes().setNamedItem(attribute);
-    return node;
-  }
-  
-  /*
-   * Ensure string is legal xml.
-   * @param text String to verify.
-   * @return Passed <code>text</code> or a new string with illegal
-   * characters removed if any found in <code>text</code>.
-   * @see http://www.w3.org/TR/2000/REC-xml-20001006#NT-Char
-   */
-  protected static String getLegalXml(final String text) {
-      if (text == null) {
-          return null;
-      }
-      StringBuffer buffer = null;
-      for (int i = 0; i < text.length(); i++) {
-        char c = text.charAt(i);
-        if (!isLegalXml(c)) {
-	  if (buffer == null) {
-              // Start up a buffer.  Copy characters here from now on
-              // now we've found at least one bad character in original.
-	      buffer = new StringBuffer(text.length());
-              buffer.append(text.substring(0, i));
-          }
-        } else {
-           if (buffer != null) {
-             buffer.append(c);
-           }
-        }
-      }
-      return (buffer != null)? buffer.toString(): text;
-  }
- 
-  private static boolean isLegalXml(final char c) {
-    return c == 0x9 || c == 0xa || c == 0xd || (c >= 0x20 && c <= 0xd7ff)
-        || (c >= 0xe000 && c <= 0xfffd) || (c >= 0x10000 && c <= 0x10ffff);
+    return p;
   }
 
 }
