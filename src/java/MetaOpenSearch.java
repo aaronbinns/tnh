@@ -25,30 +25,30 @@ import org.jdom.Namespace;
 import org.jdom.output.XMLOutputter;
 
 
-/** 
- * 
- */   
+/**
+ *
+ */
 public class MetaOpenSearch
 {
   public static final Logger LOG = Logger.getLogger( MetaOpenSearch.class.getName() );
 
-  List<RemoteOpenSearchServer> slaves = new ArrayList<RemoteOpenSearchServer>( );
+  List<RemoteOpenSearchServer> remotes = new ArrayList<RemoteOpenSearchServer>( );
   long timeout = 0;
 
-  public MetaOpenSearch( String slavesFile, long timeout )
+  public MetaOpenSearch( String templatesFile, long timeout )
     throws IOException
   {
-    this( slavesFile );
+    this( templatesFile );
     this.timeout = timeout;
   }
 
-  public MetaOpenSearch( String slavesFile )
+  public MetaOpenSearch( String templatesFile )
     throws IOException
   {
     BufferedReader r = null;
     try
       {
-        r = new BufferedReader( new InputStreamReader( new FileInputStream( slavesFile ), "utf-8" ) );
+        r = new BufferedReader( new InputStreamReader( new FileInputStream( templatesFile ), "utf-8" ) );
 
         String line;
         while ( (line = r.readLine()) != null )
@@ -60,39 +60,39 @@ public class MetaOpenSearch
                 continue ;
               }
 
-            RemoteOpenSearchServer slave = new RemoteOpenSearchServer( line );
+            RemoteOpenSearchServer ross = new RemoteOpenSearchServer( line );
 
-            this.slaves.add( slave );            
+            this.remotes.add( ross );
           }
       }
     finally
       {
         try { if ( r != null ) r.close(); } catch ( IOException ioe ) { }
       }
-    
+
   }
 
-  public Document query( String query, int startIndex, int numResults, int hitsPerSite )
+  public Document query( QueryParameters p )
   {
     long startTime = System.currentTimeMillis( );
-    
-    List<RemoteQueryThread> slaveThreads = new ArrayList<RemoteQueryThread>( this.slaves.size() );
 
-    for ( RemoteOpenSearchServer slave : this.slaves )
+    List<RemoteQueryThread> remoteThreads = new ArrayList<RemoteQueryThread>( this.remotes.size() );
+
+    for ( RemoteOpenSearchServer remote : this.remotes )
       {
-        RemoteQueryThread sqt = new RemoteQueryThread( slave, query, 0, (startIndex+numResults), hitsPerSite );
+        RemoteQueryThread sqt = new RemoteQueryThread( remote, p );
 
         sqt.start( );
 
-        slaveThreads.add( sqt );        
+        remoteThreads.add( sqt );
       }
 
-    waitForThreads( slaveThreads, this.timeout );
+    waitForThreads( remoteThreads, this.timeout );
 
     LinkedList<Element> items = new LinkedList<Element>( );
     long totalResults = 0;
 
-    for ( RemoteQueryThread sqt : slaveThreads )
+    for ( RemoteQueryThread sqt : remoteThreads )
       {
         if ( sqt.throwable != null )
           {
@@ -105,24 +105,24 @@ public class MetaOpenSearch
             Element channel = sqt.response.getRootElement( ).getChild( "channel" );
             items.addAll( (List<Element>) channel.getChildren( "item" ) );
             channel.removeChildren( "item" );
-            
+
             totalResults += Integer.parseInt( channel.getChild( "totalResults", Namespace.getNamespace( "http://a9.com/-/spec/opensearchrss/1.0/" ) ).getTextTrim( ) );
           }
-        catch ( Exception e ) 
+        catch ( Exception e )
           {
-            LOG.log( Level.SEVERE, "Error processing response from slave: " + sqt.slave, e );
+            LOG.log( Level.SEVERE, "Error processing response from: " + sqt.remote, e );
           }
-        
+
       }
 
-    if ( items.size( ) > 0 && hitsPerSite > 0 )
+    if ( items.size( ) > 0 && p.hitsPerSite > 0 )
       {
         Collections.sort( items, new ElementSiteThenScoreComparator( ) );
 
         LinkedList<Element> collapsed = new LinkedList<Element>( );
-        
+
         collapsed.add( items.removeFirst( ) );
-        
+
         int count = 1;
         for ( Element item : items )
           {
@@ -132,9 +132,9 @@ public class MetaOpenSearch
                  !lastSite.equals( item.getChild( "site", Namespace.getNamespace( "http://www.nutch.org/opensearchrss/1.0/" ) ).getTextTrim( ) ) )
               {
                 collapsed.add( item );
-                count = 1;                
+                count = 1;
               }
-            else if ( count < hitsPerSite )
+            else if ( count < p.hitsPerSite )
               {
                 collapsed.add( item );
                 count++;
@@ -157,17 +157,17 @@ public class MetaOpenSearch
     Element eStartIndex   = new Element( "startIndex",   Namespace.getNamespace( "http://a9.com/-/spec/opensearchrss/1.0/" ) );
     Element eItemsPerPage = new Element( "itemsPerPage", Namespace.getNamespace( "http://a9.com/-/spec/opensearchrss/1.0/" ) );
 
-    eTotalResults.setText( Long.toString( totalResults ) );
-    eStartIndex.  setText( Long.toString( startIndex   ) );
-    eItemsPerPage.setText( Long.toString( numResults   ) );
+    eTotalResults.setText( Long.toString( totalResults  ) );
+    eStartIndex.  setText( Long.toString( p.start       ) );
+    eItemsPerPage.setText( Long.toString( p.hitsPerPage ) );
 
     channel.addContent( eTotalResults );
     channel.addContent( eStartIndex   );
     channel.addContent( eItemsPerPage );
 
     // Get a sub-list of only the items we want: [startIndex,(startIndex+numResults)]
-    List<Element> subList = items.subList( Math.min(  startIndex,             items.size( ) ),
-                                           Math.min( (startIndex+numResults), items.size( ) ) );
+    List<Element> subList = items.subList( Math.min(  p.start,             items.size( ) ),
+                                           Math.min( (p.start+p.hitsPerPage), items.size( ) ) );
     channel.addContent( subList );
 
     Element rss = new Element( "rss" );
@@ -189,32 +189,32 @@ public class MetaOpenSearch
           {
             t.join( timeout );
           }
-        catch ( InterruptedException ie ) 
+        catch ( InterruptedException ie )
           {
             break;
           }
       }
   }
 
-  
+
   public static void main( String args[] )
     throws Exception
   {
-    String usage = "MetaOpenSearch [OPTIONS] SLAVES.txt query"
+    String usage = "MetaOpenSearch [OPTIONS] REMOTES.txt query"
       + "\n\t-h <n>    Hits per site"
       + "\n\t-n <n>    Number of results"
       + "\n\t-s <n>    Start index"
       + "\n";
-    
+
     if ( args.length < 2 )
       {
         System.err.println( usage );
         System.exit( 1 );
       }
 
-    String slavesFile = args[args.length - 2];
-    String query      = args[args.length - 1];
-    
+    String templatesFile = args[args.length - 2];
+    String query         = args[args.length - 1];
+
     int startIndex  = 0;
     int hitsPerSite = 0;
     int numHits     = 10;
@@ -238,7 +238,7 @@ public class MetaOpenSearch
                 startIndex = Integer.parseInt( args[i] );
               }
           }
-        catch ( NumberFormatException nfe ) 
+        catch ( NumberFormatException nfe )
           {
             System.err.println( "Error: not a numeric value: " + args[i] );
             System.err.println( usage );
@@ -246,9 +246,15 @@ public class MetaOpenSearch
           }
       }
 
-    MetaOpenSearch master = new MetaOpenSearch( slavesFile );
+    MetaOpenSearch meta = new MetaOpenSearch( templatesFile );
 
-    Document doc = master.query( query, startIndex, numHits, hitsPerSite );
+    QueryParameters p = new QueryParameters( );
+    p.query = query;
+    p.start = startIndex;
+    p.hitsPerPage = numHits;
+    p.hitsPerSite = hitsPerSite;
+
+    Document doc = meta.query( p );
 
     (new XMLOutputter()).output( doc, System.out );
   }
@@ -258,8 +264,9 @@ public class MetaOpenSearch
 
 class RemoteQueryThread extends Thread
 {
-  RemoteOpenSearchServer slave;
+  RemoteOpenSearchServer remote;
 
+  QueryParameters p;
   String query;
   int    startIndex;
   int    numResults;
@@ -269,20 +276,23 @@ class RemoteQueryThread extends Thread
   Throwable       throwable;
 
 
-  RemoteQueryThread( RemoteOpenSearchServer slave, String query, int startIndex, int numResults, int hitsPerSite )
+  RemoteQueryThread( RemoteOpenSearchServer remote, QueryParameters p )
   {
-    this.slave       = slave;
+    this.remote      = remote;
+    this.p           = p;
+    /*
     this.query       = query;
     this.startIndex  = startIndex;
     this.numResults  = numResults;
     this.hitsPerSite = hitsPerSite;
+    */
   }
 
   public void run( )
   {
     try
       {
-        this.response = this.slave.query( this.query, this.startIndex, this.numResults, this.hitsPerSite );
+        this.response = this.remote.query( this.p );
       }
     catch ( Throwable t )
       {
@@ -332,7 +342,7 @@ class ElementSiteThenScoreComparator extends ElementScoreComparator
 
     String site1 = e1.getChild( "site", Namespace.getNamespace( "http://www.nutch.org/opensearchrss/1.0/" ) ).getTextTrim();
     String site2 = e2.getChild( "site", Namespace.getNamespace( "http://www.nutch.org/opensearchrss/1.0/" ) ).getTextTrim();
-    
+
     if ( site1.equals( site2 ) )
       {
         // Sites are equal, then compare scores.
@@ -342,5 +352,3 @@ class ElementSiteThenScoreComparator extends ElementScoreComparator
     return site1.compareTo( site2 );
   }
 }
-
-
