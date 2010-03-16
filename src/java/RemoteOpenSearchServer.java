@@ -18,6 +18,7 @@
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.regex.*;
 import java.util.logging.*;
 
 import org.jdom.*;
@@ -36,15 +37,15 @@ class RemoteOpenSearchServer
     this.urlTemplate = urlTemplate;
   }
 
-  public Document query( String query, int startIndex, int requestedNumResults, int hitsPerSite )
+  public Document query( QueryParameters p )
     throws Exception
   {
-    URL url = buildRequestUrl( query, startIndex, requestedNumResults, hitsPerSite );
+    URL url = buildRequestUrl( p );
     
     InputStream is = null;
     try
       {
-        LOG.info( "Querying slave: " + url );
+        LOG.info( "Querying remote: " + url );
 
         is = getInputStream( url );
         
@@ -99,7 +100,7 @@ class RemoteOpenSearchServer
   /**
    * 
    */
-  public URL buildRequestUrl( String query, int startIndex, int requestedNumResults, int hitsPerSite )
+  public URL buildRequestUrl( QueryParameters p )
     throws MalformedURLException, UnsupportedEncodingException
   {
     String url = this.urlTemplate;
@@ -107,17 +108,60 @@ class RemoteOpenSearchServer
     // Note about replaceAll: In the Java regex library, the replacement string has a few
     // special characters: \ and $.  Forunately, since we URL-encode the replacement string,
     // any occurance of \ or $ is converted to %xy form.  So we don't have to worry about it. :)
-    url = url.replaceAll( "[{]searchTerms[}]", URLEncoder.encode( query, "utf-8" ) );
-    url = url.replaceAll( "[{]count[}]"      , String.valueOf( requestedNumResults ) );
-    url = url.replaceAll( "[{]startIndex[}]" , String.valueOf( startIndex ) );
-    url = url.replaceAll( "[{]hitsPerSite[}]", String.valueOf( hitsPerSite ) );
+    url = url.replaceAll( "[{]searchTerms[}]", URLEncoder.encode( p.query, "utf-8" ) );
+    url = url.replaceAll( "[{]startIndex[}]" , String.valueOf( p.start ) );
+    url = url.replaceAll( "[{]count[}]"      , String.valueOf( p.hitsPerPage ) );
+    url = url.replaceAll( "[{]hitsPerSite[}]", String.valueOf( p.hitsPerSite ) );
+
+    url = replaceMultiple( url, "sites", p.sites );
+    url = replaceMultiple( url, "indexNames", p.indexNames );
+    url = replaceMultiple( url, "collections", p.collections);
+    url = replaceMultiple( url, "types", p.types );
 
     // We don't know about any optional parameters, so we remove them (per the OpenSearch spec.)
-    url = url.replaceAll( "[{][^}]+[?][}]", "" );
-    
+    url = url.replaceAll( "[{][^}]+?[}]", "" );
+
+    // Lastly, remove any extra '&' left-over from the previous substitutions.
+    url = url.replaceAll( "[&]+$", "" );
+
     return new URL( url );
   }
 
+  /**
+   * Extenstion of OpenSearch template syntax to allow us to specify where multiple 
+   * "p=v" params should go.  For example, "{x=sites}" might be transformed into
+   * "x=site1&x=site2&x=site3".
+   */
+  public String replaceMultiple( String url, String name, String[] values )
+    throws UnsupportedEncodingException
+  {
+    String key = "=" + name + "}";
+
+    int paramEnd = url.indexOf( key );
+    if ( paramEnd > 0 )
+      {
+        for ( int i = paramEnd ; i >= 0 ; i-- )
+        {
+          if ( url.charAt( i ) == '{' )
+            {
+              String param = url.substring( i + 1, paramEnd );
+
+              StringBuilder buf = new StringBuilder( );
+              for ( int v = 0 ; v < values.length ; v++ )
+                {
+                  if ( v > 0 ) buf.append( '&' );
+                  buf.append( param );
+                  buf.append( '=' );
+                  buf.append( URLEncoder.encode( values[v], "utf-8" ) );
+                }
+              
+              url = url.substring( 0, i ) + buf.toString( ) + url.substring( paramEnd + key.length( ) );
+            }
+        }
+      }
+
+    return url;
+  }
 
   public InputStream getInputStream( URL url )
     throws IOException
@@ -196,7 +240,14 @@ class RemoteOpenSearchServer
 
     RemoteOpenSearchServer ross = new RemoteOpenSearchServer( urlTemplate );
     
-    Document doc = ross.query( query, 0, numHits, hitsPerSite );
+    QueryParameters p = new QueryParameters( );
+    p.query = query;
+    p.start = 0;
+    p.hitsPerPage = numHits;
+    p.hitsPerSite = hitsPerSite;
+    p.sites = new String[] { "clinton.senate.gov", "house.gov" };
+    
+    Document doc = ross.query( p );
 
     (new XMLOutputter()).output( doc, System.out );
   }
