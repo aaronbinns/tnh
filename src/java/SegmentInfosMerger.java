@@ -46,6 +46,14 @@ public class SegmentInfosMerger
     
     dest.read( destDir );
 
+    SortedSet<String> existingNames = new TreeSet<String>( );
+    for ( int i = 0; i < dest.size( ) ; i++ )
+      {
+        SegmentInfo s = (SegmentInfo) dest.get( i );
+
+        existingNames.add( s.name );
+      }
+
     TreeMap userData = new TreeMap( dest.getUserData( ) );
 
     for ( int i = 1 ; i < args.length ; i++ )
@@ -62,14 +70,20 @@ public class SegmentInfosMerger
           {
             SegmentInfo s = (SegmentInfo) source.get( si );
 
-            String mergedName = "_" + dest.size( ) + 1;
+            String mergedName = s.name;
+            if ( existingNames.contains( mergedName ) )
+              {
+                mergedName = "_" + dest.size( ) + 1;
 
-            String fullSourceName = args[i] + "/" + s.name;
-            String fullMergedName = args[0] + "/" + mergedName;
+                existingNames.add( mergedName );
+              }
 
-            userData.put( fullSourceName, fullMergedName );
+            String sourcePath = args[i] + "/" + s.name;
+            String mergedPath = args[0] + "/" + mergedName;
 
-            System.out.println( fullSourceName + " " + fullMergedName );
+            userData.put( sourcePath, mergedPath );
+
+            System.out.println( sourcePath + " " + mergedPath );
 
             s.name = mergedName;
             dest.add( s );
