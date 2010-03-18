@@ -50,15 +50,6 @@ public class SegmentInfosMerger
         dest.read( destDir );
       }
 
-
-    SortedSet<String> existingNames = new TreeSet<String>( );
-    for ( int i = 0; i < dest.size( ) ; i++ )
-      {
-        SegmentInfo s = (SegmentInfo) dest.get( i );
-
-        existingNames.add( s.name );
-      }
-
     TreeMap userData = new TreeMap( dest.getUserData( ) );
 
     for ( int i = 1 ; i < args.length ; i++ )
@@ -75,12 +66,10 @@ public class SegmentInfosMerger
           {
             SegmentInfo s = (SegmentInfo) source.get( si );
 
-            String mergedName = s.name;
-            if ( existingNames.contains( mergedName ) )
-              {
-                mergedName = "_" + dest.size( ) + 1;
-              }
-            existingNames.add( mergedName );
+            // Construct a new name for the segment in the merged index.
+            // Use the same scheme as the Lucene IndexWriter does (which
+            // is in org.apache.lucene.index.IndexFileNames.fileNameFromGeneration().
+            String mergedName = "_" + Long.toString( dest.size(), Character.MAX_RADIX);
 
             String sourcePath = args[i] + "/" + s.name;
             String mergedPath = args[0] + "/" + mergedName;
@@ -94,6 +83,23 @@ public class SegmentInfosMerger
           }
       }
 
+    // We *must* increment the SegmentInfos.counter ourselves.
+    Field f = SegmentInfos.class.getDeclaredField( "counter" );
+    f.setAccessible( true );
+    f.setInt( dest, dest.size( ) );
+
+    // It seems that we don't need to write these out ourselves.  The
+    // SegmentInfos class keeps track of them.
+    /*
+    Field = SegmentInfos.class.getDeclaredField( "generation" );
+    f.setAccessible( true );
+    f.setInt( dest, dest.size( ) + 1);
+
+    f = SegmentInfos.class.getDeclaredField( "lastGeneration" );
+    f.setAccessible( true );
+    f.setInt( dest, dest.size( ) + 1);
+    */
+
     Method m = SegmentInfos.class.getDeclaredMethod( "setUserData", Map.class );
     m.setAccessible( true );
     m.invoke( dest, userData );
@@ -105,5 +111,6 @@ public class SegmentInfosMerger
     m = SegmentInfos.class.getDeclaredMethod( "finishCommit", Directory.class );
     m.setAccessible( true );
     m.invoke( dest, destDir ); 
+
   }
 }
