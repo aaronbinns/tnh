@@ -20,6 +20,7 @@ import java.io.*;
 import java.util.*;
 import java.util.zip.*;
 
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.store.*;
 
@@ -44,7 +45,11 @@ public class SegmentInfosMerger
 
     SegmentInfos dest = new SegmentInfos( );
     
-    dest.read( destDir );
+    if ( IndexReader.indexExists( destDir ) )
+      {
+        dest.read( destDir );
+      }
+
 
     SortedSet<String> existingNames = new TreeSet<String>( );
     for ( int i = 0; i < dest.size( ) ; i++ )
@@ -74,9 +79,8 @@ public class SegmentInfosMerger
             if ( existingNames.contains( mergedName ) )
               {
                 mergedName = "_" + dest.size( ) + 1;
-
-                existingNames.add( mergedName );
               }
+            existingNames.add( mergedName );
 
             String sourcePath = args[i] + "/" + s.name;
             String mergedPath = args[0] + "/" + mergedName;
