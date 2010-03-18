@@ -1,0 +1,46 @@
+#!/bin/bash
+
+linkcommand=""
+while getopts "lsmh" linkmode
+do
+    #  echo "$linkmode" $OPTIND $OPTARG
+    #  echo "$linkcommand"
+    case "$linkmode" in
+        l|s|m)
+            if [ "" != "$linkcommand" ]; then
+                echo "Error: only one of -lsm is allowed."
+                exit 1
+            fi
+            case "$linkmode" in
+                l) linkcommand="ln" ;;
+                s) linkcommand="ln -s" ;;
+                m) linkcommand="mv" ;;
+            esac
+            ;;
+        ?)
+            echo "$0 -lsm <output> <input>..."
+            exit 0
+            ;;
+    esac
+done
+if [ $# -eq 0 ]; then 
+    echo "$0 -lsm <output> <input>..."
+    exit 1
+fi
+if [ "" = "$linkcommand" ]; then
+    echo "Error: one of -lsm must be specified."
+    exit 1
+fi
+
+if [ "" = "$CLASSPATH" ]; then
+    echo "Error: CLASSPATH not set"
+    exit 1
+fi
+
+shift $((OPTIND-1))
+
+java SegmentInfosMerger $* | while read from to ; do
+    for i in ${from}.* ; do
+        $linkcommand ${i} ${to}.${i##*.}
+    done
+done
