@@ -15,13 +15,10 @@
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.io.File;
+import java.io.*;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermDocs;
-import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.index.*;
+import org.apache.lucene.document.*;
 import org.apache.lucene.store.NIOFSDirectory;
 
 
@@ -33,14 +30,46 @@ public class TermDumper
   {
     if ( args.length < 2 )
       {
-        System.err.println( "TermDumper field <index...>" );
+        System.err.println( "TermDumper [-c|-v value] field <index...>" );
         System.exit( 1 );
       }
     
-    String field = args[0];
+    boolean count = false;
+    String  value = null;
+    boolean all   = false;
+
+    int i = 0;
+    for ( ; i < args.length ; i++ )
+      {
+        String arg = args[i];
+        
+        if ( "-h".equals( arg ) || "--help".equals( arg ) )
+          {
+            System.err.println( "TermDumper [-c|-v value] field <index...>" );
+            System.exit( 1 );
+          }
+        else if ( "-c".equals( arg ) || "--count".equals( arg ) )
+          {
+            count = true;
+          }
+        else if ( "-v".equals( arg ) || "--vaue".equals( arg ) )
+          {
+            value = args[++i];
+          }
+        else if ( "-a".equals( arg ) || "--all".equals( arg ) )
+          {
+            all = true;
+          }
+        else
+          {
+            break; 
+          }
+      }
+
+    String field = args[i++];
 
     java.util.ArrayList<IndexReader> readers = new java.util.ArrayList<IndexReader>( args.length - 1);
-    for ( int i = 1 ; i < args.length ; i++ )
+    for ( ; i < args.length ; i++ )
       {
         String arg = args[i];
         try
@@ -68,11 +97,42 @@ public class TermDumper
 
                 if ( term==null || ! field.equals( term.field() ) ) break;
 
-                String termval = term.text();
-
-                termDocs.seek( termEnum );
-
-                System.out.println( termval );
+                
+                if ( value == null )
+                  {
+                    if ( count ) 
+                      {
+                        termDocs.seek( termEnum );
+                        
+                        int c = 0;
+                        for ( ; termDocs.next() ; c++ ) ;
+                        
+                        System.out.print( c + " " );
+                      }
+                    System.out.println( term.text() );
+                  }
+                else if ( value.equals( term.text( ) ) )
+                  {
+                    termDocs.seek( termEnum );
+                    
+                    while ( termDocs.next( ) )
+                      {
+                        if ( all )
+                          {
+                            Document d = reader.document( termDocs.doc() );
+                            System.out.println( termDocs.doc( ) );
+                            for ( Object o : d.getFields() )
+                              {
+                                Field f = (Field) o;
+                                System.out.println( f.name( ) + " " + d.get( f.name( ) ) );
+                              }
+                          }
+                        else
+                          {
+                            System.out.println( termDocs.doc() + " " + reader.document( termDocs.doc() ).get( "url" ) );
+                          }
+                      }
+                  }
               }
             while (termEnum.next());
           }
