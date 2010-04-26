@@ -37,8 +37,10 @@ public class OpenSearchServlet extends HttpServlet
   public int    hitsPerSite;
   public int    indexDivisor;
   public String indexPath;
+  public String segmentPath;
   public Search searcher;
   public DefaultQueryTranslator translator;
+  public Segments segments;
   
   public void init( ServletConfig config )
     throws ServletException
@@ -47,10 +49,16 @@ public class OpenSearchServlet extends HttpServlet
     this.hitsPerSite  = ServletHelper.getInitParameter( config, "hitsPerSite",   1, 0 );
     this.indexDivisor = ServletHelper.getInitParameter( config, "indexDivisor", 10, 1 );
     this.indexPath    = ServletHelper.getInitParameter( config, "index", false );
+    this.segmentPath  = ServletHelper.getInitParameter( config, "segments", true );
 
     try
       {
         this.searcher = new Search( IndexOpener.open( indexPath, indexDivisor ) );
+
+        if ( this.segmentPath.length() != 0 )
+          {
+            this.segments = new Segments( this.segmentPath );
+          }
       }
     catch ( IOException ioe )
       {
@@ -126,7 +134,16 @@ public class OpenSearchServlet extends HttpServlet
             Highlighter highlighter = new Highlighter( new QueryScorer( q, "content" ) );
             
             StringBuilder buf = new StringBuilder( 100 );
-            String        raw = hit.get( "content" );
+
+            // TODO: Hack in some code to look for the "content" in few places for
+            //       NutchWAX backwards-compatibility:
+            //         1. In "content" field.
+            //         2. In NutchWAX segment directory.
+            String raw = hit.get( "content" );
+            if ( raw == null )
+              {
+                raw = getContentFromSegment( hit );
+              }
             raw = raw == null ? "" : raw;
             for ( String snippet : highlighter.getBestFragments( new SimpleAnalyzer( ), "content", raw, 8 ) )
               {
@@ -163,4 +180,15 @@ public class OpenSearchServlet extends HttpServlet
     return p;
   }
 
+  public String getContentFromSegment( org.apache.lucene.document.Document hit )
+  {
+    if ( this.segments == null ) return "";
+
+    String c = hit.get( "collection" );
+    String s = hit.get( "segment"    );
+    String u = hit.get( "url"        );
+    String d = hit.get( "digest"     );
+
+    return this.segments.getParseText( c, s, u + " " + d );
+  }
 }
