@@ -33,6 +33,7 @@
       <classes dir="build/classes" />
       <lib dir="lib">
         <include name="lucene-*.jar" />
+        <include name="hadoop-*.jar" />
         <include name="jdom.*" />
       </lib>
       <fileset dir="${src.dir}">
