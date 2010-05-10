@@ -93,7 +93,7 @@ public class OpenSearchHelper
   public static void writeResponse( Document doc, HttpServletResponse response )
     throws IOException
   {
-    // TODO
+    // TODO: Is creating a new XMLOutputter every time a good idea?
     (new XMLOutputter()).output( doc, response.getOutputStream( ) );
   }
 
