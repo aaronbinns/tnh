@@ -87,7 +87,11 @@ public class OpenSearchServlet extends HttpServlet
         this.translator.addGroup( q, "type", p.types );
         this.translator.addGroup( q, "collection", p.collections );
 
+        long parseQueryTime = System.nanoTime();
+
         Search.Result result = this.searcher.search( p.indexNames, q, p.start + (p.hitsPerPage*3), p.hitsPerSite );
+
+        long executeQueryTime = System.nanoTime();
 
         // The 'end' is usually just the end of the current page
         // (start+hitsPerPage); but if we are on the last page
@@ -135,9 +139,9 @@ public class OpenSearchServlet extends HttpServlet
             
             StringBuilder buf = new StringBuilder( 100 );
 
-            // TODO: Hack in some code to look for the "content" in few places for
-            //       NutchWAX backwards-compatibility:
-            //         1. In "content" field.
+            // HACK: Look for the "content" in few places for NutchWAX
+            //       backwards-compatibility:
+            //         1. In "content" field of the Lucene document
             //         2. In NutchWAX segment directory.
             String raw = hit.get( "content" );
             if ( raw == null )
@@ -155,8 +159,23 @@ public class OpenSearchServlet extends HttpServlet
           }
 
         OpenSearchHelper.addResponseTime( channel, System.nanoTime( ) - responseTime );
+        
+        long buildResultsTime = System.nanoTime();
 
         OpenSearchHelper.writeResponse( doc, response );
+
+        long writeResponseTime = System.nanoTime();
+
+        LOG.info( "S: " 
+                  + ((parseQueryTime-responseTime)/1000/1000)
+                  + " " 
+                  + ((executeQueryTime-parseQueryTime)/1000/1000)
+                  + " " 
+                  + ((buildResultsTime-executeQueryTime)/1000/1000)
+                  + " " 
+                  + ((writeResponseTime-buildResultsTime)/1000/1000)
+                  + " " 
+                  + p.query );
       }
     catch ( Exception e )
       {
