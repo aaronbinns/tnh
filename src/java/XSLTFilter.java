@@ -16,6 +16,8 @@
  */
 
 import java.io.*;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 import javax.servlet.*;
 import javax.servlet.http.*;
 
@@ -25,8 +27,12 @@ import javax.xml.transform.stream.*;
 
 public class XSLTFilter implements Filter
 {
+  public static final Logger LOG = Logger.getLogger( OpenSearchServlet.class.getName() );
+
   private String xsltUrl;
   private String contentType;
+
+  private Templates cachedTemplates;
 
   public void init( FilterConfig config )
     throws ServletException
@@ -40,6 +46,16 @@ public class XSLTFilter implements Filter
         if ( this.xsltUrl.length( ) == 0 )
           {
             this.xsltUrl = null;
+          }
+        else
+          {
+            // There is an XSLT URL given, compile the template and cache it.
+            try
+              {
+                LOG.info( "Loading XSTL template: " + this.xsltUrl );
+                this.cachedTemplates = TransformerFactory.newInstance( ).newTemplates( new StreamSource( xsltUrl ) );
+              }
+            catch ( javax.xml.transform.TransformerException te ) { throw new ServletException( te  ); }
           }
       }
 
@@ -76,9 +92,7 @@ public class XSLTFilter implements Filter
         
         try
           {
-            Source      xsltSource    = new StreamSource( xsltUrl );
-            Templates   xsltTemplates = TransformerFactory.newInstance( ).newTemplates( xsltSource );
-            Transformer transformer   = xsltTemplates.newTransformer( );
+            Transformer transformer = getTemplates( (HttpServletRequest) request ).newTransformer( );
             
             StreamSource source = new StreamSource( new ByteArrayInputStream( output ) );
             StreamResult result = new StreamResult( response.getOutputStream( ) );
@@ -88,13 +102,10 @@ public class XSLTFilter implements Filter
             
             transformer.transform( source, result );
           }
-        catch ( javax.xml.transform.TransformerConfigurationException tce )
-          {
-            // TODO: Re-throw, or log it and eat it?
-          }
         catch( javax.xml.transform.TransformerException te )
           {
-            // TODO: Re-throw, or log it and eat it?
+            LOG.log( Level.SEVERE, "Error compiling XSL template", te );
+            throw new ServletException( te );
           }
       }
     else
@@ -106,6 +117,25 @@ public class XSLTFilter implements Filter
   public void destroy()
   {
 
+  }
+
+  public Templates getTemplates( HttpServletRequest request )
+    throws javax.xml.transform.TransformerConfigurationException
+  {
+    String header = null;
+    if ( (header = request.getHeader( "pragma"        )) != null ||
+         (header = request.getHeader( "cache-control" )) != null )
+      {
+        header = header.trim().toLowerCase( );
+        
+        if ( header.contains( "no-cache" ) )
+          {
+            LOG.info( "Reloading XSTL template: " + this.xsltUrl );
+            this.cachedTemplates = TransformerFactory.newInstance( ).newTemplates( new StreamSource( this.xsltUrl ) );
+          }
+      }
+
+    return this.cachedTemplates;
   }
 
 }
