@@ -111,7 +111,7 @@
       This simple XSLT demonstrates the transformation of OpenSearch XML results into a fully-functional, human-friendly HTML search page.  No JSP needed.
     &lt;/div>
     &lt;div class="searchForm">
-      &lt;form id="searchForm" name="searchForm" method="get" action="search" >
+      &lt;form id="searchForm" name="searchForm" method="get">
         &lt;span class="searchFields">
         Search for 
         &lt;input id="q" name="q" type="text" size="40" value=&quot;<xsl:call-template name="string-replace-all">
