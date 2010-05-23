@@ -74,7 +74,14 @@ public class MetaOpenSearch
 
   public Document query( QueryParameters p )
   {
-    long startTime = System.currentTimeMillis( );
+    Map<String,String[]> r = Collections.emptyMap( );
+
+    return this.query( p, r );
+  }
+
+  public Document query( QueryParameters p, Map<String,String[]> requestParams )
+  {
+    long startTime = System.nanoTime( );
 
     List<RemoteQueryThread> remoteThreads = new ArrayList<RemoteQueryThread>( this.remotes.size() );
 
@@ -148,32 +155,18 @@ public class MetaOpenSearch
     Collections.sort( items, new ElementScoreComparator( ) );
 
     // Build the final results OpenSearch XML document.
-    Element channel = new Element( "channel" );
-    channel.addContent( new Element( "title"       ) );
-    channel.addContent( new Element( "description" ) );
-    channel.addContent( new Element( "link"        ) );
+    Document doc = new Document( );
 
-    Element eTotalResults = new Element( "totalResults", Namespace.getNamespace( "http://a9.com/-/spec/opensearchrss/1.0/" ) );
-    Element eStartIndex   = new Element( "startIndex",   Namespace.getNamespace( "http://a9.com/-/spec/opensearchrss/1.0/" ) );
-    Element eItemsPerPage = new Element( "itemsPerPage", Namespace.getNamespace( "http://a9.com/-/spec/opensearchrss/1.0/" ) );
-
-    eTotalResults.setText( Long.toString( totalResults  ) );
-    eStartIndex.  setText( Long.toString( p.start       ) );
-    eItemsPerPage.setText( Long.toString( p.hitsPerPage ) );
-
-    channel.addContent( eTotalResults );
-    channel.addContent( eStartIndex   );
-    channel.addContent( eItemsPerPage );
+    Element channel = OpenSearchHelper.startResponse( doc, p, requestParams, totalResults );
 
     // Get a sub-list of only the items we want: [startIndex,(startIndex+numResults)]
     List<Element> subList = items.subList( Math.min(  p.start,             items.size( ) ),
                                            Math.min( (p.start+p.hitsPerPage), items.size( ) ) );
     channel.addContent( subList );
 
-    Element rss = new Element( "rss" );
-    rss.addContent( channel );
+    OpenSearchHelper.addResponseTime( channel, System.nanoTime() - startTime );
 
-    return new Document( rss );
+    return doc;
   }
 
 
