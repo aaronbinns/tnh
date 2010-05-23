@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-import java.util.*;
 import java.io.*;
+import java.util.*;
+import java.util.regex.*;
 
 import org.apache.lucene.search.*;
 import org.apache.lucene.analysis.*;
@@ -28,46 +29,45 @@ import org.apache.lucene.util.Version;
 
 public class DefaultQueryTranslator
 {
+  public static final Pattern TOKENIZER = Pattern.compile( "([-+]*[\"][^\"]+[\"]?|[-+]*[^\\s\"]+)" );
 
   public BooleanQuery translate( String query )
   {
-    String[] splitOnQuotes = query.split( "[\"]" );
     List<String> terms = new ArrayList<String>( 8 );
     List<String> minus = new ArrayList<String>( 8 );
-    for ( int i = 0 ; i < splitOnQuotes.length ; i++ )
+
+    Matcher m = TOKENIZER.matcher( query );
+
+    while ( m.find( ) )
       {
-        String qterm = splitOnQuotes[i];
-        if ( i % 2 == 1 )
-          {
-            // If a '-' appears inside a quoted phrase, remove it.
-            qterm = qterm.replace( '-', ' ' );
-          }
+        String term = m.group( 1 );
+
+        boolean isMinus = term.charAt( 0 ) == '-';
+
+        // Remove any leading + - characters.
+        term = term.replaceFirst( "^[-+]+", "" );
+
+        // Now that the quotes are handled, remove them.
+        term = term.replace( "\"", "" );
 
         // HACK: To handle "don't" -> "dont" and such.
-        qterm = qterm.replace( "'", "" );
+        term = term.replace( "'", "" );
 
         // Use the Java regex syntax:
         //   \p{L}  -- All Unicode letters
         //   \p{N}  -- All Unicode numbers
         // Anything that is not a letter|number or '-' is stripped.
-        qterm = qterm.replaceAll( "[^\\p{L}\\p{N}-']", " " );
+        term = term.replaceAll( "[^\\p{L}\\p{N}-']", " " );
 
-        for ( String t : qterm.split( "\\s+" ) )
+        if ( term.length() == 0 ) continue ;
+
+        if ( isMinus )
           {
-            if ( t.length() == 0 ) continue;
-
-            if ( t.charAt( 0 ) == '-' )
-              {
-                String m = t.replaceFirst( "[-]+", "" );
-                if ( m.trim().length( ) > 0 )
-                  {
-                    minus.add( m.toLowerCase( ) );
-                  }
-              }
-            else 
-              {
-                terms.add( t.toLowerCase( ) );
-              }
+            minus.add( term.toLowerCase( ) );
+          }
+        else 
+          {
+            terms.add( term.toLowerCase( ) );
           }
       }
     
@@ -90,10 +90,10 @@ public class DefaultQueryTranslator
 
     for ( String t : terms )
       {
-        TermQuery tq = new TermQuery( new Term( field, t ) );
-        tq.setBoost( boost );
+        Query q = buildQuery( field, t );
+        q.setBoost( boost );
 
-        group.add( tq, BooleanClause.Occur.MUST );
+        group.add( q, BooleanClause.Occur.MUST );
       }
 
     bq.add( group, BooleanClause.Occur.SHOULD );
@@ -105,15 +105,15 @@ public class DefaultQueryTranslator
       {
         BooleanQuery group = new BooleanQuery( );
         
-        TermQuery tq = new TermQuery( new Term( "title", terms.get(i) ) );
-        group.add( tq, BooleanClause.Occur.MUST );
+        Query q = buildQuery( "title", terms.get(i) );
+        group.add( q, BooleanClause.Occur.MUST );
 
         for ( int j = 0 ; j < terms.size() ; j++ )
           {
             if ( j == i ) continue ;
 
-            tq = new TermQuery( new Term( "content", terms.get(j) ) );
-            group.add( tq, BooleanClause.Occur.MUST );
+            q = buildQuery( "content", terms.get(j) );
+            group.add( q, BooleanClause.Occur.MUST );
           }
 
         bq.add( group, BooleanClause.Occur.SHOULD );
@@ -124,9 +124,9 @@ public class DefaultQueryTranslator
   {
     for ( String m : minus )
       {
-        bq.add( new TermQuery( new Term( "url"    , m ) ), BooleanClause.Occur.MUST_NOT );
-        bq.add( new TermQuery( new Term( "title"  , m ) ), BooleanClause.Occur.MUST_NOT );
-        bq.add( new TermQuery( new Term( "content", m ) ), BooleanClause.Occur.MUST_NOT );
+        bq.add( buildQuery( "url",     m ), BooleanClause.Occur.MUST_NOT );
+        bq.add( buildQuery( "title",   m ), BooleanClause.Occur.MUST_NOT );
+        bq.add( buildQuery( "content", m ), BooleanClause.Occur.MUST_NOT );
       }
   }
 
@@ -141,13 +141,31 @@ public class DefaultQueryTranslator
 
     for ( String value : values )
       {
-        TermQuery tq = new TermQuery( new Term( field, value ) );
-        group.add( tq, BooleanClause.Occur.SHOULD );            
+        Query q = buildQuery( field, value );
+        group.add( q, BooleanClause.Occur.SHOULD );            
       }
 
     bq.add( group, BooleanClause.Occur.MUST );
   }
 
+  public Query buildQuery( String field, String term )
+  {
+    if ( term.indexOf( ' ' ) == -1 )
+      {
+        TermQuery tq = new TermQuery( new Term( field, term ) );
+
+        return tq;
+      }
+    else
+      {
+        PhraseQuery pq = new PhraseQuery( );
+        for ( String t : term.trim().split( "\\s+" ) )
+          {
+            pq.add( new Term( field, t ) );
+          }
+        return pq;
+      }
+  }
 
   public static void main( String[] args )
     throws Exception
