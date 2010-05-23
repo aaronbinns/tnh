@@ -49,8 +49,8 @@ public class DefaultQueryTranslator
         // Use the Java regex syntax:
         //   \p{L}  -- All Unicode letters
         //   \p{N}  -- All Unicode numbers
-        // Anything that is not a letter|number is stripped.
-        qterm = qterm.replaceAll( "[^\\p{L}\\p{N}']", " " );
+        // Anything that is not a letter|number or '-' is stripped.
+        qterm = qterm.replaceAll( "[^\\p{L}\\p{N}-']", " " );
 
         for ( String t : qterm.split( "\\s+" ) )
           {
