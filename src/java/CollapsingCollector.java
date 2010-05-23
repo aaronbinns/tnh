@@ -26,7 +26,18 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 
-
+/**
+ * Custom Lucene (document) Collector which only keeps the N
+ * top-scoring documents per site.
+ *
+ * Instantiate with a FieldCache containing the sites for all the
+ * documents in the index; then pass to the Lucene Searcher.search()
+ * method to execute the search.  The CollapsingCollector will collect
+ * the results, keeping only the top N per site.
+ * 
+ * Use the getNumUncollapsedHits() and getHits() methods to retrieve
+ * the total number of uncollapsed hits and the collapsed Hits.
+ */
 public class CollapsingCollector extends Collector
 {
   public static final Comparator<Hit> SCORE_COMPARATOR = new Comparator<Hit>( )
@@ -53,7 +64,12 @@ public class CollapsingCollector extends Collector
   {
     public int compare( Hit h1, Hit h2 )
     {
-      return String.CASE_INSENSITIVE_ORDER.compare( h1.site, h2.site );
+      int c = String.CASE_INSENSITIVE_ORDER.compare( h1.site, h2.site );
+      
+      if ( c != 0 ) return c;
+
+      // If the sites are the same, then compare the scores.
+      return SCORE_COMPARATOR.compare( h1, h2 );
     }
   };
 
@@ -149,10 +165,10 @@ public class CollapsingCollector extends Collector
 
         this.numCandidatesPassScore++;
 
-        // Since we just added a new site, re-sort them.
+        // Since we just added a new document, re-sort them by score.
         Arrays.sort( this.sortedByScore, SCORE_COMPARATOR );
 
-        // No need to re-sort the sites if not collapsing.
+        // If we are collapsing, re-sort by site too.
         if ( this.hitsPerSite != 0 )
           {
             Arrays.sort( this.sortedBySite, SITE_COMPARATOR_TOTAL );
@@ -194,7 +210,7 @@ public class CollapsingCollector extends Collector
    * replace with the candidate, if the candidate's score is good
    * enough.
    * For hitsPerSite == 0, just return -1.
-   * For hitsPerSite > 0, we return the position of the lowest-scoring
+   * For hitsPerSite &gt; 0, we return the position of the lowest-scoring
    * Hit for the candidate site, *if and only if* the number of hits
    * from that site is at the maxiumum number allowed.  Otherwise,
    * we can still allow more hits from the candidate site, so we
@@ -204,18 +220,30 @@ public class CollapsingCollector extends Collector
   {
     if ( this.hitsPerSite == 0 ) return -1;
 
+    // By using a partial comparator, we will either find one (of
+    // potentially many) Hits having the candidate site, or we will
+    // get pos < 1 indicating none were found.
     int pos = Arrays.binarySearch( this.sortedBySite, candidate, SITE_COMPARATOR_PARTIAL );
     
-    if ( pos < 0 || this.hitsPerSite == 1 ) return pos;
+    // If none found, return -1;
+    if ( pos < 0 ) return -1;
+
+    // If one was found, and hitsPerSite == 1, then we found the only
+    // match, return its position.
+    if ( this.hitsPerSite == 1 ) return pos;
     
+    // Ok, if we get here, we found a hit with the same site as the
+    // candidate.  We search both left and right from that position to
+    // determine where the left and right ending positions are for all
+    // the Hits with the same site.
     int i = pos, j = pos;
 
-    final int mini = 0, maxj = this.sortedBySite.length - 1;
+    final int min = 0, max = this.sortedBySite.length - 1;
 
-    for ( ; i > mini && SITE_COMPARATOR_PARTIAL.compare( this.sortedBySite[i], this.sortedBySite[i-1] ) == 0; i-- )
+    for ( ; i > min && SITE_COMPARATOR_PARTIAL.compare( this.sortedBySite[i], this.sortedBySite[i-1] ) == 0; i-- )
       ;
 
-    for ( ; j < maxj && SITE_COMPARATOR_PARTIAL.compare( this.sortedBySite[i], this.sortedBySite[j+1] ) == 0; j++ )
+    for ( ; j < max && SITE_COMPARATOR_PARTIAL.compare( this.sortedBySite[i], this.sortedBySite[j+1] ) == 0; j++ )
       ;
 
     // The number of hits from this site is (j-i+1), so if we are less
