@@ -26,7 +26,14 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.util.Version;
 
-
+/**
+ * Parses user query and translates it into a Lucene BooleanQuery,
+ * applying custom rules for handling quoted phrases, +/- operators
+ * and the application of terms to the url, title and content fields.
+ *
+ * NOTE: Although there is no member data, the methods are not static.
+ * Allows addition of interface with multiple implementations later.
+ */
 public class DefaultQueryTranslator
 {
   public static final Pattern TOKENIZER = Pattern.compile( "([-+]*[\"][^\"]+[\"]?|[-+]*[^\\s\"]+)" );
