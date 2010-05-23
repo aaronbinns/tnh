@@ -35,12 +35,17 @@ public class OpenSearchHelper
   public static final String NS_OPENSEARCH = "http://a9.com/-/spec/opensearchrss/1.0/";
   public static final String NS_ARCHIVE    = "http://web.archive.org/-/spec/opensearchrss/1.0/";
 
+
+  public static Element startResponse( Document doc, QueryParameters p, HttpServletRequest request, long totalResults )
+  {
+    return startResponse( doc, p, (Map<String,String[]>) request.getParameterMap( ), totalResults );
+  }
+
   /**
    * Helper function to populate the given JDOM Document with the
    * OpenSearch header information.
    */
-  public static Element startResponse( Document doc, QueryParameters p, HttpServletRequest request, long totalResults )
-    throws Exception
+  public static Element startResponse( Document doc, QueryParameters p, Map<String,String[]> requestParams, long totalResults )
   {
     Element rss = new Element( "rss" );
     rss.setAttribute( "version", "2.0" );
@@ -59,14 +64,19 @@ public class OpenSearchHelper
     JDOMHelper.add( channel, NS_OPENSEARCH, "itemsPerPage", Integer.toString( p.hitsPerPage ) );
     JDOMHelper.add( channel, NS_ARCHIVE,    "query",        p.query );
 
+    for ( String i : p.indexNames )
+      {
+        JDOMHelper.add( channel, NS_ARCHIVE, "index", i );
+      }
+
     // Add a <urlParams> element containing a list of all the URL parameters.
     Element urlParams = new Element( "urlParams", Namespace.getNamespace( NS_ARCHIVE ) );
     channel.addContent( urlParams );
     
-    for ( Map.Entry<String,String[]> e : ((Map<String,String[]>) request.getParameterMap( )).entrySet( ) )
+    for ( Map.Entry<String,String[]> param : requestParams.entrySet() )
       {
-        String key = e.getKey( );
-        for ( String value : e.getValue( ) )
+        String key = param.getKey( );
+        for ( String value : param.getValue( ) )
           {
             Element urlParam = new Element( "param", Namespace.getNamespace( NS_ARCHIVE ) );
             urlParam.setAttribute( "name",  key          );
