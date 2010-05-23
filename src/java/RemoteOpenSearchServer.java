@@ -156,6 +156,8 @@ class RemoteOpenSearchServer
                 }
               
               url = url.substring( 0, i ) + buf.toString( ) + url.substring( paramEnd + key.length( ) );
+
+              return url;
             }
         }
       }
