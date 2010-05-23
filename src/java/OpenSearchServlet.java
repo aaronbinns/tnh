@@ -39,6 +39,7 @@ public class OpenSearchServlet extends HttpServlet
   public String indexPath;
   public String segmentPath;
   public Search searcher;
+  
   public DefaultQueryTranslator translator;
   public Segments segments;
   
@@ -89,7 +90,18 @@ public class OpenSearchServlet extends HttpServlet
 
         long parseQueryTime = System.nanoTime();
 
-        Search.Result result = this.searcher.search( p.indexNames, q, p.start + (p.hitsPerPage*3), p.hitsPerSite );
+        p.indexNames = removeUnknownIndexNames( p.indexNames );
+        
+        Search.Result result;
+        if ( p.indexNames.length == 0 )
+          {
+            result = new Search.Result( );
+            result.hits = new Hit[0];
+          }
+        else
+          {
+            result = this.searcher.search( p.indexNames, q, p.start + (p.hitsPerPage*3), p.hitsPerSite );
+          }
 
         long executeQueryTime = System.nanoTime();
 
@@ -181,6 +193,18 @@ public class OpenSearchServlet extends HttpServlet
       {
         throw new ServletException( e );
       }
+  }
+
+  public String[] removeUnknownIndexNames( String[] names )
+  {
+    Set<String> known = new HashSet( names.length );
+
+    for ( int i = 0; i < names.length ; i++ )
+      {
+        if ( this.searcher.hasIndex( names[i] ) ) known.add( names[i] );
+      }
+
+    return known.toArray( new String[known.size()] );
   }
 
   public QueryParameters getQueryParameters( HttpServletRequest request )
