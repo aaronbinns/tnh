@@ -15,26 +15,8 @@
  * limitations under the License.
  */
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.io.Reader;
-import java.io.Writer;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.PriorityQueue;
+import java.io.*;
+import java.util.*;
 
 import org.apache.lucene.search.*;
 import org.apache.lucene.analysis.*;
@@ -84,6 +66,11 @@ public class Search
   {
     if ( siteCache == null ) throw new IllegalArgumentException( "siteCache cannot be null" );
     this.siteCache = siteCache;
+  }
+
+  public boolean hasIndex( String name )
+  {
+    return this.searchers.containsKey( name );
   }
 
   public Result search( String query, int maxHits, int hitsPerSite )
@@ -150,7 +137,7 @@ public class Search
     throws IOException
   {
     if ( indexNames == null || indexNames.length == 0 ) throw new IllegalArgumentException( "At least one indexName must be specified" );
-
+    
     Searchable[] searchables = new Searchable[indexNames.length];
     for ( int i = 0 ; i < indexNames.length ; i++ )
       {
