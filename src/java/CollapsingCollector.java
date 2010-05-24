@@ -257,6 +257,10 @@ public class CollapsingCollector extends Collector
     return i;
   }
 
+  /**
+   * Return array of Hits.  If there were no hits, the array is of
+   * size 0.
+   */
   public Hit[] getHits()
   {
     Hit[] hits = new Hit[this.getNumHits( )];
@@ -270,6 +274,20 @@ public class CollapsingCollector extends Collector
     return hits;
   }
 
+  /**
+   * Returns the number of collapsed hits.  Usually this will be equal
+   * to the number of hits requested, unless we found fewer after
+   * collapsing.
+   *
+   * For example, if we requested 10, found 349 "raw" hits, then
+   * collapsed and collected the top 10, then this would return 10.
+   * If you want the total uncollapsed, or "raw", hits, then call
+   * getNumUncollapsedHits().
+   *
+   * This number returned by this method will match the size of the
+   * array returned by getHits().  So, usually you would just get the
+   * Hits[] and not bother calling this method.
+   */
   public int getNumHits( )
   {
     for ( int i = this.sortedByScore.length - this.maxNumResults ; i < this.sortedByScore.length ; i++ )
@@ -282,6 +300,9 @@ public class CollapsingCollector extends Collector
     return 0;
   }
 
+  /**
+   * Returns the total number of uncollapsed, or "raw", hits.
+   */
   public int getNumUncollapsedHits( )
   {
     return this.numUncollapsedHits;
