@@ -25,7 +25,12 @@ import org.jdom.*;
 import org.jdom.input.*;
 import org.jdom.output.*;
 
-
+/**
+ * Represents, and queries a remote OpenSearch server.  Instantiate
+ * with an OpenSearch template, then use <code>query()</code> to
+ * connect to the remote server, submit the query and return the
+ * results as an XML document.
+ */
 class RemoteOpenSearchServer
 {
   public static final Logger LOG = Logger.getLogger( RemoteOpenSearchServer.class.getName() );
@@ -120,6 +125,9 @@ class RemoteOpenSearchServer
 
     // We don't know about any optional parameters, so we remove them (per the OpenSearch spec.)
     url = url.replaceAll( "[{][^}]+?[}]", "" );
+
+    // Collapse multiple '&' into one, e.g. "&&&" -> "&"
+    url = url.replaceAll( "[&]{2,}+", "&" );
 
     // Lastly, remove any extra '&' left-over from the previous substitutions.
     url = url.replaceAll( "[&]+$", "" );
