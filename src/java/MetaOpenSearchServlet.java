@@ -24,7 +24,7 @@ import org.jdom.*;
 import org.jdom.output.XMLOutputter;
 
 /** 
- * 
+ * Simple servlet wrapper/interface around MetaOpenSearch.
  */   
 public class MetaOpenSearchServlet extends HttpServlet
 {
