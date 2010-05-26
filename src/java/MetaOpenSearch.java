@@ -26,7 +26,18 @@ import org.jdom.output.XMLOutputter;
 
 
 /**
+ * Performs meta-search/federated search against multiple OpenSearch
+ * services.
  *
+ * Instantiate with a path to a text file containing a list of
+ * OpenSearch templates.  These OpenSearch servers will be queried by
+ * the MetaOpenSearch object.
+ *
+ * Results from the many remote OpenSearch servers are combined and
+ * sorted by score.  The scores are exactly as provided by the remote
+ * servers.  Multiple hits from the same site are collapsed to just
+ * the top N hits, where N is passed in as part of the
+ * QueryParameters.
  */
 public class MetaOpenSearch
 {
@@ -260,11 +271,6 @@ class RemoteQueryThread extends Thread
   RemoteOpenSearchServer remote;
 
   QueryParameters p;
-  String query;
-  int    startIndex;
-  int    numResults;
-  int    hitsPerSite;
-
   Document        response;
   Throwable       throwable;
 
@@ -273,12 +279,6 @@ class RemoteQueryThread extends Thread
   {
     this.remote      = remote;
     this.p           = p;
-    /*
-    this.query       = query;
-    this.startIndex  = startIndex;
-    this.numResults  = numResults;
-    this.hitsPerSite = hitsPerSite;
-    */
   }
 
   public void run( )
