@@ -124,7 +124,7 @@ public class MetaOpenSearch
             items.addAll( (List<Element>) channel.getChildren( "item" ) );
             channel.removeChildren( "item" );
 
-            totalResults += Integer.parseInt( channel.getChild( "totalResults", Namespace.getNamespace( "http://a9.com/-/spec/opensearchrss/1.0/" ) ).getTextTrim( ) );
+            totalResults += Integer.parseInt( channel.getChild( "totalResults", Namespace.getNamespace( OpenSearchHelper.NS_OPENSEARCH ) ).getTextTrim( ) );
           }
         catch ( Exception e )
           {
@@ -144,10 +144,10 @@ public class MetaOpenSearch
         int count = 1;
         for ( Element item : items )
           {
-            String lastSite = collapsed.getLast( ).getChild( "site", Namespace.getNamespace( "http://www.nutch.org/opensearchrss/1.0/" ) ).getTextTrim( );
+            String lastSite = collapsed.getLast( ).getChild( "site", Namespace.getNamespace( OpenSearchHelper.NS_ARCHIVE ) ).getTextTrim( );
 
             if ( lastSite.length( ) == 0 ||
-                 !lastSite.equals( item.getChild( "site", Namespace.getNamespace( "http://www.nutch.org/opensearchrss/1.0/" ) ).getTextTrim( ) ) )
+                 !lastSite.equals( item.getChild( "site", Namespace.getNamespace( OpenSearchHelper.NS_ARCHIVE ) ).getTextTrim( ) ) )
               {
                 collapsed.add( item );
                 count = 1;
@@ -266,6 +266,11 @@ public class MetaOpenSearch
 }
 
 
+/**
+ * Simple thread wrapper which queries the remote server with the
+ * given parameters and stores the response.  If any exception or
+ * error occurs in the thread, it is captured as well.
+ */
 class RemoteQueryThread extends Thread
 {
   RemoteOpenSearchServer remote;
@@ -303,8 +308,8 @@ class ElementScoreComparator implements Comparator<Element>
     if ( e1 == null ) return 1;
     if ( e2 == null ) return -1;
 
-    Element score1 = e1.getChild( "score", Namespace.getNamespace( "http://www.nutch.org/opensearchrss/1.0/" )  );
-    Element score2 = e2.getChild( "score", Namespace.getNamespace( "http://www.nutch.org/opensearchrss/1.0/" )  );
+    Element score1 = e1.getChild( "score", Namespace.getNamespace( OpenSearchHelper.NS_ARCHIVE ) );
+    Element score2 = e2.getChild( "score", Namespace.getNamespace( OpenSearchHelper.NS_ARCHIVE )  );
 
     if ( score1 == score2 ) return 0;
     if ( score1 == null )   return 1;
@@ -333,8 +338,8 @@ class ElementSiteThenScoreComparator extends ElementScoreComparator
     if ( e1 == null ) return 1;
     if ( e2 == null ) return -1;
 
-    String site1 = e1.getChild( "site", Namespace.getNamespace( "http://www.nutch.org/opensearchrss/1.0/" ) ).getTextTrim();
-    String site2 = e2.getChild( "site", Namespace.getNamespace( "http://www.nutch.org/opensearchrss/1.0/" ) ).getTextTrim();
+    String site1 = e1.getChild( "site", Namespace.getNamespace( OpenSearchHelper.NS_ARCHIVE ) ).getTextTrim();
+    String site2 = e2.getChild( "site", Namespace.getNamespace( OpenSearchHelper.NS_ARCHIVE ) ).getTextTrim();
 
     if ( site1.equals( site2 ) )
       {
