@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.io.IOException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.DocIdSetIterator;
 
 
 public class TestCollapse2
@@ -36,7 +37,7 @@ public class TestCollapse2
       new Hit(  7, 0.7f, "d" ),
       new Hit(  8, 0.8f, "e" ),
       new Hit(  9, 0.9f, "a"  ),
-      new Hit( 10, 0.15f, "g" ),
+      new Hit( 10, 0.15f, "f" ),
       new Hit( 11, 0.15f, "g" ),
       new Hit( 12, 0.15f, "g" ),
       new Hit( 13, 0.25f, "g" ),
@@ -86,6 +87,7 @@ public class TestCollapse2
             
             collector.collect( docs[i].id );
           }
+
         responseTime = System.nanoTime( ) - responseTime;
         System.err.println( "Response Time   : " + (responseTime/1000.0f/1000.0f) + "ms"  );
 
@@ -132,6 +134,21 @@ class TestScorer extends Scorer
     this.currentDoc = doc;
   }
 
+  public int advance( int target )
+  {
+    return NO_MORE_DOCS;
+  }
+
+  public int docID( )
+  {
+    return this.currentDoc.id;
+  }
+  
+  public int nextDoc( )
+  {
+    return DocIdSetIterator.NO_MORE_DOCS;
+  }
+  
   public float score( )
   {
     return this.currentDoc.score;
