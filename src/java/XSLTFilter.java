@@ -37,44 +37,17 @@ public class XSLTFilter implements Filter
   public void init( FilterConfig config )
     throws ServletException
   {
-    this.xsltUrl = config.getInitParameter( "xsltUrl" );
+    this.xsltUrl = ServletHelper.getInitParameter( config, "xsltUrl", false );
 
-    if ( this.xsltUrl != null )
+    // Compile the template and cache it.
+    try
       {
-        this.xsltUrl = this.xsltUrl.trim( );
-        
-        if ( this.xsltUrl.length( ) == 0 )
-          {
-            this.xsltUrl = null;
-          }
-        else
-          {
-            // There is an XSLT URL given, compile the template and cache it.
-            try
-              {
-                LOG.info( "Loading XSTL template: " + this.xsltUrl );
-                this.cachedTemplates = TransformerFactory.newInstance( ).newTemplates( new StreamSource( xsltUrl ) );
-              }
-            catch ( javax.xml.transform.TransformerException te ) { throw new ServletException( te  ); }
-          }
+        LOG.info( "Loading XSL template: " + this.xsltUrl );
+        this.cachedTemplates = TransformerFactory.newInstance( ).newTemplates( new StreamSource( xsltUrl ) );
       }
+    catch ( javax.xml.transform.TransformerException te ) { throw new ServletException( te  ); }
 
-    this.contentType = config.getInitParameter( "contentType" );
-
-    if ( this.contentType != null )
-      {
-        this.contentType = this.contentType.trim( );
-        
-        if ( this.contentType.length( ) == 0 )
-          {
-            this.contentType = null;
-          }
-      }
-
-    if ( this.contentType == null )
-      {
-        this.contentType = "application/xml";
-      }
+    this.contentType = ServletHelper.getInitParameter( config, "contentType", "text/html; charset=utf-8" );    
   }
 
   public void doFilter( ServletRequest request, ServletResponse response, FilterChain chain )
@@ -130,7 +103,7 @@ public class XSLTFilter implements Filter
         
         if ( header.contains( "no-cache" ) )
           {
-            LOG.info( "Reloading XSTL template: " + this.xsltUrl );
+            LOG.info( "Reloading XSL template: " + this.xsltUrl );
             this.cachedTemplates = TransformerFactory.newInstance( ).newTemplates( new StreamSource( this.xsltUrl ) );
           }
       }
@@ -141,6 +114,11 @@ public class XSLTFilter implements Filter
 }
 
 
+/**
+ * Simple response wrapper that intercepts the response, writing it to
+ * the given OutputStream.  It can be used to capture the response to
+ * a byte[] by giving it an instance of ByteArrayOutputStream.
+ */
 class HttpServletResponseInterceptor extends HttpServletResponseWrapper
 {
   private OutputStream os;
