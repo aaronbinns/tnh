@@ -29,4 +29,20 @@ public class QueryParameters
   String[] indexNames  = ALL_INDEXES;
   String[] collections = EMPTY_STRINGS;
   String[] types       = EMPTY_STRINGS;
+
+  public QueryParameters()
+  {
+  }
+
+  public QueryParameters( QueryParameters other )
+  {
+    this.query       = other.query;
+    this.start       = other.start;
+    this.hitsPerPage = other.hitsPerPage;
+    this.hitsPerSite = other.hitsPerSite;
+    this.sites       = other.sites;
+    this.indexNames  = other.indexNames;
+    this.collections = other.collections;
+    this.types       = other.types;
+  }
 }
