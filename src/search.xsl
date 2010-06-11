@@ -133,7 +133,11 @@
         &lt;/span>
       &lt;/form>
     &lt;/div>
-    &lt;div style="font-size: 8pt; margin:0; padding:0 0 0.5em 0;">Results <xsl:value-of select="opensearch:startIndex + 1" />-<xsl:value-of select="opensearch:startIndex + opensearch:itemsPerPage" /> of about <xsl:value-of select="format-number( opensearch:totalResults, '###,###' )" /> &lt;span style="margin-left: 0;">(<xsl:value-of select="archive:responseTime" /> seconds)&lt;/span>
+    &lt;div style="font-size: 8pt; margin:0; padding:0 0 0.5em 0;">Results <xsl:value-of select="opensearch:startIndex + 1" />-<xsl:choose>
+          <xsl:when test="(opensearch:startIndex + opensearch:itemsPerPage) &lt; opensearch:totalResults"><xsl:value-of select="format-number( opensearch:startIndex + opensearch:itemsPerPage, '###,###' )" /></xsl:when>
+          <xsl:otherwise><xsl:value-of select="format-number( opensearch:totalResults, '###,###' )" /></xsl:otherwise> 
+        </xsl:choose>
+          of about <xsl:value-of select="format-number( opensearch:totalResults, '###,###' )" /> &lt;span style="margin-left: 0;">(<xsl:value-of select="archive:responseTime" /> seconds)&lt;/span>
     <xsl:if test="archive:urlParams/archive:param[@name='s']">
       <xsl:text>from &lt;span style=&quot;color: green;&quot;></xsl:text>
       <xsl:value-of select="archive:urlParams/archive:param[@name='s']/@value" />
