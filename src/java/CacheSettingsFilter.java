@@ -34,21 +34,7 @@ public class CacheSettingsFilter implements Filter
   public void init( FilterConfig config )
     throws ServletException
   {
-    this.maxAge = config.getInitParameter( "max-age" );
-
-    if ( this.maxAge != null )
-      {
-        this.maxAge = this.maxAge.trim( );
-        
-        if ( this.maxAge.length( ) == 0 )
-          {
-            this.maxAge = null;
-          }
-        else
-          {
-            this.maxAge = "max-age=" + this.maxAge;
-          }
-      }
+    this.maxAge = "max-age=" + ServletHelper.getInitParameter( config, "max-age", false );
   }
 
   public void doFilter( ServletRequest request, ServletResponse response, FilterChain chain )
