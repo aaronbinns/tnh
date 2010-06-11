@@ -33,11 +33,11 @@ public class ServletHelper
   public static final String PARAMS_KEY = "opensearch.parameters";
   
   /**
-   * Convenience function to parse a given value as an integer.
+   * Utility function to parse a given value as an integer.
    * If it cannot be parsed, the default value is used.
    * If it can be parsed and is not greater than the minValue, a ServletException is thrown.
    */
-  public static int getInitParameter( String value, String name, int defaultValue, int minValue )
+  public static int validate( String name, String value, int defaultValue, int minValue )
     throws ServletException
   {
     value = value == null ? "" : value.trim( );
@@ -69,35 +69,33 @@ public class ServletHelper
   }
 
   /**
-   * Convenience function to parse a configuration parameter value as an integer.
-   * If it cannot be parsed, the default value is used.
-   * If it can be parsed and is not greater than the minValue, a ServletException is thrown.
+   * Utility function to return the given value unless it is <code>null</code> or empty, in which
+   * case return the given defaultValue.
    */
-  public static int getInitParameter( ServletConfig config, String name, int defaultValue, int minValue )
-    throws ServletException
+  public static String validate( String name, String value, String defaultValue )
   {
-    return getInitParameter( config.getInitParameter( name ), name, defaultValue, minValue );
+    value = value == null ? "" : value.trim();
+
+    if ( value.length() == 0 )
+      {
+        LOG.info( name + ": using default value: " + defaultValue );
+
+        return defaultValue;
+      }
+
+    LOG.info( name + ": using configuration value: " + value );
+
+    return value;
   }
 
   /**
-   * Convenience function to parse a configuration parameter value as an integer.
-   * If it cannot be parsed, the default value is used.
-   * If it can be parsed and is not greater than the minValue, a ServletException is thrown.
-   */
-  public static int getInitParameter( FilterConfig config, String name, int defaultValue, int minValue )
-    throws ServletException
-  {
-    return getInitParameter( config.getInitParameter( name ), name, defaultValue, minValue );
-  }
-
-  /**
-   * Convenience function to check that a given value is non-empty.  If empty
+   * Utility function to check that a given value is non-empty.  If empty
    * values are prohibited a ServletException is thrown.
    */
-  public static String getInitParameter( String value, String name, boolean allowEmpty )
+  public static String validate( String name, String value, boolean allowEmpty )
     throws ServletException
   {
-    value = value == null ? "" : value;
+    value = value == null ? "" : value.trim();
 
     if ( value.length() == 0 && ! allowEmpty )
       {
@@ -108,16 +106,56 @@ public class ServletHelper
   }
 
   /**
-   * Convenience function to check a configuration parameter value is
-   * non-empty.  If empty values are prohibited, a ServletException is
-   * thrown.
+   * Convenience function to parse a configuration parameter value as an integer.
+   * If it cannot be parsed, the default value is used.
+   * If it can be parsed and is not greater than the minValue, a ServletException is thrown.
+   */
+  public static int getInitParameter( ServletConfig config, String name, int defaultValue, int minValue )
+    throws ServletException
+  {
+    return validate( name, config.getInitParameter( name ), defaultValue, minValue );
+  }
+
+  /**
+   * Convenience function to parse a configuration parameter value as an integer.
+   * If it cannot be parsed, the default value is used.
+   * If it can be parsed and is not greater than the minValue, a ServletException is thrown.
+   */
+  public static int getInitParameter( FilterConfig config, String name, int defaultValue, int minValue )
+    throws ServletException
+  {
+    return validate( name, config.getInitParameter( name ), defaultValue, minValue );
+  }
+
+  /**
+   * Convenience function to get an servlet init parameter value, returning a given default
+   * value if <code>null</code> or empty.
+   */
+  public static String getInitParameter( ServletConfig config, String name, String defaultValue )
+    throws ServletException
+  {
+    return validate( name, config.getInitParameter( name ), defaultValue );
+  }
+
+  /**
+   * Convenience function to get an filter init parameter value, returning a given default
+   * value if <code>null</code> or empty.
+   */
+  public static String getInitParameter( FilterConfig config, String name, String defaultValue )
+    throws ServletException
+  {
+    return validate( name, config.getInitParameter( name ), defaultValue );
+  }
+
+  /**
+   * Convenience function to get a configuration parameter value.  If
+   * empty values are prohibited, a ServletException is thrown.
    */
   public static String getInitParameter( ServletConfig config, String name, boolean allowEmpty )
     throws ServletException
   {
-    return getInitParameter( config.getInitParameter( name ), name, allowEmpty );
+    return validate( name, config.getInitParameter( name ), allowEmpty );
   }
-
 
   /**
    * Convenience function to check a configuration parameter value is
@@ -127,9 +165,8 @@ public class ServletHelper
   public static String getInitParameter( FilterConfig config, String name, boolean allowEmpty )
     throws ServletException
   {
-    return getInitParameter( config.getInitParameter( name ), name, allowEmpty );
+    return validate( name, config.getInitParameter( name ), allowEmpty );
   }
-
 
   /**
    * Convenience function to get a URL parameter String value,
