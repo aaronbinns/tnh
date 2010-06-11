@@ -85,4 +85,13 @@
   <url-pattern>/search</url-pattern>
 </filter-mapping>
 
+<!-- For requests to be redirected from / to /search, we need the following set
+     for the default servlet in Jetty's etc/webdefault.xml
+       welcomeServlet   true
+       redirectWelcome  true
+  -->
+<welcome-file-list>
+  <welcome-file>/search</welcome-file>
+</welcome-file-list>
+
 </web-app>
