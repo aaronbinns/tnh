@@ -16,6 +16,7 @@
  */
 
 import java.io.*;
+import java.net.*;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 import javax.servlet.*;
@@ -27,7 +28,7 @@ import javax.xml.transform.stream.*;
 
 public class XSLTFilter implements Filter
 {
-  public static final Logger LOG = Logger.getLogger( OpenSearchServlet.class.getName() );
+  public static final Logger LOG = Logger.getLogger( XSLTFilter.class.getName() );
 
   private String xsltUrl;
   private String contentType;
@@ -38,6 +39,15 @@ public class XSLTFilter implements Filter
     throws ServletException
   {
     this.xsltUrl = ServletHelper.getInitParameter( config, "xsltUrl", false );
+
+    // Look for the xslt as a resource via the classloader, but if not
+    // found, then just try it as a regular URL.
+    URL u = this.getClass().getClassLoader().getResource( this.xsltUrl );
+    
+    if ( u != null )
+      {
+        this.xsltUrl = u.toString();
+      }
 
     // Compile the template and cache it.
     try
