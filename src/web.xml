@@ -28,10 +28,42 @@
     <param-value></param-value>
   </init-param>
   <init-param>
-    <param-name></param-name>
+    <param-name>segments</param-name>
     <param-value></param-value>
   </init-param>
 </servlet>
+
+<!-- For metasearch, use the following: -->
+<!--
+<servlet>
+  <servlet-name>OpenSearch</servlet-name>
+  <servlet-class>MetaOpenSearchServlet</servlet-class>
+  <init-param>
+    <param-name>remotes</param-name>
+    <param-value></param-value>
+  </init-param>
+</servlet>
+-->
+
+<!-- The rest is the same for both OpenSearch and MetaOpenSearch -->
+
+<filter>
+  <filter-name>Cache Settings</filter-name>
+  <filter-class>CacheSettingsFilter</filter-class>
+  <init-param>
+    <param-name>max-age</param-name>
+    <param-value>259200</param-value>  <!-- 72 hours (in seconds) -->
+  </init-param>
+</filter>
+
+<filter>
+  <filter-name>XSLT Filter</filter-name>
+  <filter-class>XSLTFilter</filter-class>
+  <init-param>
+    <param-name>xsltUrl</param-name>
+    <param-value>search.xsl</param-value>
+  </init-param>
+</filter>
 
 <servlet-mapping>
   <servlet-name>OpenSearch</servlet-name>
@@ -43,28 +75,14 @@
   <url-pattern>/opensearch</url-pattern>
 </servlet-mapping>
 
-<filter>
-  <filter-name>XSLT Filter</filter-name>
-  <filter-class>XSLTFilter</filter-class>
-  <init-param>
-    <param-name>xsltUrl</param-name>
-    <param-value>webapps/tnh/search.xsl</param-value>
-  </init-param>
-  <init-param>
-    <param-name>contentType</param-name>
-    <param-value>text/html; charset=utf-8</param-value>
-  </init-param>
-</filter>
+<filter-mapping>
+  <filter-name>Cache Settings</filter-name>
+  <servlet-name>OpenSearch</servlet-name>
+</filter-mapping>
 
 <filter-mapping>
   <filter-name>XSLT Filter</filter-name>
   <url-pattern>/search</url-pattern>
 </filter-mapping>
-
-<welcome-file-list>
-  <welcome-file>search.html</welcome-file>
-  <welcome-file>index.html</welcome-file>
-  <welcome-file>index.jsp</welcome-file>
-</welcome-file-list>
 
 </web-app>
