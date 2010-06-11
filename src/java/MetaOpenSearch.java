@@ -94,11 +94,17 @@ public class MetaOpenSearch
   {
     long startTime = System.nanoTime( );
 
+    // For the remote servers, start at position 0 and ask for enough
+    // results to handle the start offset on the metasearch side.
+    QueryParameters rp = new QueryParameters( p );
+    rp.start = 0;
+    rp.hitsPerPage += p.start;
+
     List<RemoteQueryThread> remoteThreads = new ArrayList<RemoteQueryThread>( this.remotes.size() );
 
     for ( RemoteOpenSearchServer remote : this.remotes )
       {
-        RemoteQueryThread sqt = new RemoteQueryThread( remote, p );
+        RemoteQueryThread sqt = new RemoteQueryThread( remote, rp );
 
         sqt.start( );
 
@@ -171,7 +177,7 @@ public class MetaOpenSearch
     Element channel = OpenSearchHelper.startResponse( doc, p, requestParams, totalResults );
 
     // Get a sub-list of only the items we want: [startIndex,(startIndex+numResults)]
-    List<Element> subList = items.subList( Math.min(  p.start,             items.size( ) ),
+    List<Element> subList = items.subList( Math.min(  p.start,                items.size( ) ),
                                            Math.min( (p.start+p.hitsPerPage), items.size( ) ) );
     channel.addContent( subList );
 
