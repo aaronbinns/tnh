@@ -41,10 +41,10 @@ public class MetaOpenSearchServlet extends HttpServlet
     this.hitsPerPage = ServletHelper.getInitParameter( config, "hitsPerPage", 10,  1 );
     this.hitsPerSite = ServletHelper.getInitParameter( config, "hitsPerSite",  1,  0 );
 
-    String rossFile = ServletHelper.getInitParameter( config, "ross", false );
+    String remotesFile = ServletHelper.getInitParameter( config, "remotes", false );
     try
       {
-        this.meta = new MetaOpenSearch( rossFile, timeout );
+        this.meta = new MetaOpenSearch( remotesFile, timeout );
       }
     catch ( IOException ioe )
       {
