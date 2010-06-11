@@ -28,6 +28,7 @@
   &lt;html xmlns="http://www.w3.org/1999/xhtml">
   &lt;head>
   &lt;title><xsl:value-of select="title" />&lt;/title>
+  &lt;link rel="shortcut icon" href="/favicon.ico" />
   &lt;style media="all" lang="en" type="text/css">
   body
   {
