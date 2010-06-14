@@ -28,7 +28,7 @@
   &lt;html xmlns="http://www.w3.org/1999/xhtml">
   &lt;head>
   &lt;title><xsl:value-of select="title" />&lt;/title>
-  &lt;link rel="shortcut icon" href="/favicon.ico" />
+  &lt;link rel="shortcut icon" href="favicon.ico" />
   &lt;style media="all" lang="en" type="text/css">
   body
   {
@@ -181,20 +181,33 @@
 <!-- Template to emit a search result as an HTML list item (<li/>).
   -->
 <xsl:template match="item">
+  <!-- If there is a title, use it, otherwise use the URL. -->
+  <xsl:variable name="title">
+    <xsl:choose>
+      <xsl:when test="normalize-space(title)"><xsl:value-of select="title" /></xsl:when>
+      <xsl:otherwise><xsl:value-of select="link" /></xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+  <!-- Define substring to use in constructing the Wayback URL depending on the presence of a collection. -->
+  <xsl:variable name="collection">
+    <xsl:choose>
+      <xsl:when test="normalize-space(archive:collection)"><xsl:value-of select="concat('/', archive:collection)" /></xsl:when>
+      <xsl:otherwise><xsl:value-of select="''" /></xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
   &lt;li>
   &lt;div class="searchResult">
     &lt;h1>
-    <!-- TODO: Put wayback into link here -->
-    &lt;a href=&quot;<xsl:value-of select="concat($wayback,'/',archive:collection,'/',date,'/',link)" /> &quot;><xsl:value-of select="title" />&lt;/a>
+    &lt;a href=&quot;<xsl:value-of select="concat( $wayback, $collection, '/', date, '/', link )" /> &quot;><xsl:value-of select="$title" />&lt;/a>
     &lt;/h1>
     &lt;div>
       <xsl:value-of select="description" />
     &lt;/div>
     &lt;div class="details">
-      <xsl:value-of select="link" /> - <xsl:value-of select="round( archive:length div 1024 )"/>k - <xsl:value-of select="archive:type" />
+      <xsl:value-of select="concat( $wayback, $collection, '/', date, '/', link )" /> - <xsl:value-of select="round( archive:length div 1024 )"/>k - <xsl:value-of select="archive:type" />
     &lt;/div>
     &lt;div class="dates">
-      <xsl:text>&lt;a</xsl:text><xsl:text> href=&quot;</xsl:text><xsl:value-of select="concat($wayback,'/',archive:collection,'/*/',link)" /><xsl:text>&quot;</xsl:text><xsl:text>></xsl:text>
+      <xsl:text>&lt;a</xsl:text><xsl:text> href=&quot;</xsl:text><xsl:value-of select="concat( $wayback, $collection, '/*/', link )" /><xsl:text>&quot;</xsl:text><xsl:text>></xsl:text>
         <xsl:text>All versions (</xsl:text><xsl:value-of select="count( date )" /><xsl:text>)</xsl:text>
       <xsl:text>&lt;/a></xsl:text>
       <xsl:if test="not(../archive:urlParams/archive:param[@name='s'])">
