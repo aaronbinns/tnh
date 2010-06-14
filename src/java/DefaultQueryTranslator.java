@@ -20,11 +20,7 @@ import java.util.*;
 import java.util.regex.*;
 
 import org.apache.lucene.search.*;
-import org.apache.lucene.analysis.*;
-import org.apache.lucene.queryParser.*;
-import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
-import org.apache.lucene.util.Version;
 
 /**
  * Parses user query and translates it into a Lucene BooleanQuery,
