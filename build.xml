@@ -42,7 +42,7 @@
         <include name="*.xsl" />
       </zipfileset>
       <fileset dir="${src.dir}">
-        <include name="favicon.ico" />
+        <include name="favicon.*" />
       </fileset>
     </war>
   </target>
