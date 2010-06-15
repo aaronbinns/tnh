@@ -86,16 +86,16 @@ class RemoteOpenSearchServer
 
     for ( Element item : (List<Element>) channel.getChildren( "item" ) )
       {
-        Element site = item.getChild( "site", Namespace.getNamespace( "http://www.nutch.org/opensearchrss/1.0/" ) );
+        Element site = item.getChild( "site", Namespace.getNamespace( OpenSearchHelper.NS_ARCHIVE ) );
         if ( site == null )
           {
-            item.addContent( new Element( "site", Namespace.getNamespace( "http://www.nutch.org/opensearchrss/1.0/" ) ) );
+            item.addContent( new Element( "site", Namespace.getNamespace( OpenSearchHelper.NS_ARCHIVE ) ) );
           }
         
-        Element score = item.getChild( "score", Namespace.getNamespace( "http://www.nutch.org/opensearchrss/1.0/" ) );
+        Element score = item.getChild( "score", Namespace.getNamespace( OpenSearchHelper.NS_ARCHIVE ) );
         if ( score == null )
           {
-            item.addContent( new Element( "score", Namespace.getNamespace( "http://www.nutch.org/opensearchrss/1.0/" ) ) );
+            item.addContent( new Element( "score", Namespace.getNamespace( OpenSearchHelper.NS_ARCHIVE ) ) );
           }
       }
 
