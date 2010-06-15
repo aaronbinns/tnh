@@ -102,6 +102,8 @@ public class ServletHelper
         throw new ServletException( "Error: '" + name + "' must have a non-empty value" );
       }
 
+    LOG.info( name + ": using configuration value: " + value );
+
     return value;
   }
 
