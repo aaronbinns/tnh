@@ -6,3 +6,7 @@ Foundation (http://www.apache.org/).
 
 This product includes software developed by the JDOM Project
 (http://www.jdom.org/).
+
+This product includes graphic images from http://favicon.cc
+  http://www.favicon.cc/?action=icon&file_id=136630
+  License: Creative Commons, no attribution
