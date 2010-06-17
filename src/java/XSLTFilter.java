@@ -29,7 +29,7 @@ public class XSLTFilter implements Filter
 {
   public static final Logger LOG = Logger.getLogger( XSLTFilter.class.getName() );
 
-  private String xsltUrl;
+  private URL    xslt;
   private String contentType;
 
   private Templates cachedTemplates;
@@ -37,24 +37,16 @@ public class XSLTFilter implements Filter
   public void init( FilterConfig config )
     throws ServletException
   {
-    this.xsltUrl = ServletHelper.getInitParameter( config, "xsltUrl", false );
-
-    // Look for the xslt as a resource via the classloader, but if not
-    // found, then just try it as a regular URL.
-    URL u = this.getClass().getClassLoader().getResource( this.xsltUrl );
-    
-    if ( u != null )
-      {
-        this.xsltUrl = u.toString();
-      }
-
-    // Compile the template and cache it.
     try
       {
-        LOG.info( "Loading XSL template: " + this.xsltUrl );
-        this.cachedTemplates = TransformerFactory.newInstance( ).newTemplates( new StreamSource( xsltUrl ) );
+        this.xslt = ServletHelper.getResource( ServletHelper.getInitParameter( config, "xslt", false ) );
+        
+        // Compile the template and cache it.
+        LOG.info( "Loading XSL template: " + this.xslt );
+        this.cachedTemplates = TransformerFactory.newInstance( ).newTemplates( new StreamSource( xslt.toString( ) ) );
       }
-    catch ( javax.xml.transform.TransformerException te ) { throw new ServletException( te  ); }
+    catch ( TransformerConfigurationException te ) { throw new ServletException( te ); }
+    catch ( IOException ioe )                      { throw new ServletException( ioe ); }
 
     this.contentType = ServletHelper.getInitParameter( config, "contentType", "text/html; charset=utf-8" );    
   }
@@ -62,7 +54,7 @@ public class XSLTFilter implements Filter
   public void doFilter( ServletRequest request, ServletResponse response, FilterChain chain )
     throws IOException, ServletException 
   {
-    if ( this.xsltUrl != null )
+    if ( this.xslt != null )
       {
         ByteArrayOutputStream baos = new ByteArrayOutputStream( 8 * 1024 );
 
@@ -112,8 +104,8 @@ public class XSLTFilter implements Filter
         
         if ( header.contains( "no-cache" ) )
           {
-            LOG.info( "Reloading XSL template: " + this.xsltUrl );
-            this.cachedTemplates = TransformerFactory.newInstance( ).newTemplates( new StreamSource( this.xsltUrl ) );
+            LOG.info( "Reloading XSL template: " + this.xslt );
+            this.cachedTemplates = TransformerFactory.newInstance( ).newTemplates( new StreamSource( this.xslt.toString( ) ) );
           }
       }
 

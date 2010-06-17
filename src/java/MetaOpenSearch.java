@@ -15,6 +15,7 @@
  */
 
 import java.io.*;
+import java.net.*;
 import java.util.*;
 import java.util.logging.*;
 
@@ -45,20 +46,20 @@ public class MetaOpenSearch
   List<RemoteOpenSearchServer> remotes = new ArrayList<RemoteOpenSearchServer>( );
   long timeout = 0;
 
-  public MetaOpenSearch( String templatesFile, long timeout )
+  public MetaOpenSearch( URL templates, long timeout )
     throws IOException
   {
-    this( templatesFile );
+    this( templates );
     this.timeout = timeout;
   }
 
-  public MetaOpenSearch( String templatesFile )
+  public MetaOpenSearch( URL templates )
     throws IOException
   {
     BufferedReader r = null;
     try
       {
-        r = new BufferedReader( new InputStreamReader( new FileInputStream( templatesFile ), "utf-8" ) );
+        r = new BufferedReader( new InputStreamReader( templates.openStream(), "utf-8" ) );
 
         String line;
         while ( (line = r.readLine()) != null )
@@ -79,7 +80,7 @@ public class MetaOpenSearch
       {
         try { if ( r != null ) r.close(); } catch ( IOException ioe ) { }
       }
-
+    
   }
 
   public Document query( QueryParameters p )
@@ -221,8 +222,8 @@ public class MetaOpenSearch
         System.exit( 1 );
       }
 
-    String templatesFile = args[args.length - 2];
-    String query         = args[args.length - 1];
+    String templates = args[args.length - 2];
+    String query     = args[args.length - 1];
 
     int startIndex  = 0;
     int hitsPerSite = 0;
@@ -255,7 +256,7 @@ public class MetaOpenSearch
           }
       }
 
-    MetaOpenSearch meta = new MetaOpenSearch( templatesFile );
+    MetaOpenSearch meta = new MetaOpenSearch( new URL( templates ) );
 
     QueryParameters p = new QueryParameters( );
     p.query = query;

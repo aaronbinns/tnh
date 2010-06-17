@@ -15,7 +15,10 @@
  */
 
 import java.io.*;
+import java.net.*;
 import java.util.*;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 import javax.servlet.*;
 import javax.servlet.http.*;
 
@@ -27,6 +30,8 @@ import org.jdom.output.XMLOutputter;
  */   
 public class MetaOpenSearchServlet extends HttpServlet
 {
+  public static final Logger LOG = Logger.getLogger( MetaOpenSearchServlet.class.getName() );
+
   MetaOpenSearch meta;
 
   int timeout;
@@ -40,10 +45,13 @@ public class MetaOpenSearchServlet extends HttpServlet
     this.hitsPerPage = ServletHelper.getInitParameter( config, "hitsPerPage", 10,  1 );
     this.hitsPerSite = ServletHelper.getInitParameter( config, "hitsPerSite",  1,  0 );
 
-    String remotesFile = ServletHelper.getInitParameter( config, "remotes", false );
     try
       {
-        this.meta = new MetaOpenSearch( remotesFile, timeout );
+        URL remotes = ServletHelper.getResource( ServletHelper.getInitParameter( config, "remotes", false ) );
+        
+        LOG.info( "Loading remotes: " + remotes );
+        
+        this.meta = new MetaOpenSearch( remotes, timeout );
       }
     catch ( IOException ioe )
       {

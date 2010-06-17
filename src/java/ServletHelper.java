@@ -15,6 +15,7 @@
  */
 
 import java.io.*;
+import java.net.*;
 import java.util.*;
 import java.util.logging.Logger;
 import javax.servlet.*;
@@ -222,5 +223,25 @@ public class ServletHelper
     
     return v;
   } 
+
+  /**
+   * Returns a URL to the resource.  If the resource can be found in
+   * the classpath, return a URL to it.  Otherwise return a URL to the
+   * given location.
+   */
+  public static URL getResource( String location )
+    throws MalformedURLException
+  {
+    // Look for the resource via the classloader, but if not found,
+    // then just try it as a regular URL.
+    URL u = ServletHelper.class.getClassLoader().getResource( location );
+    
+    if ( u != null )
+      {
+        return u;
+      }
+
+    return new URL( location );
+  }
 
 }
