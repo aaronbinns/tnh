@@ -30,7 +30,7 @@
   <target name="war" depends="compile">
     <war compress="true" 
          destfile="${build.dir}/search.war"
-         webxml="${src.dir}/web.xml">
+         webxml="${src.dir}/web/web.xml">
       <classes dir="build/classes" />
       <lib dir="lib">
         <include name="lucene-*.jar" />
@@ -38,10 +38,11 @@
         <include name="jdom.*" />
         <include name="commons-logging-*.jar" />
       </lib>
-      <zipfileset prefix="WEB-INF/classes" dir="${src.dir}">
+      <zipfileset prefix="WEB-INF/classes" dir="${src.dir}/web">
         <include name="*.xsl" />
+        <include name="remotes.txt" />
       </zipfileset>
-      <fileset dir="${src.dir}">
+      <fileset dir="${src.dir}/web">
         <include name="favicon.*" />
       </fileset>
     </war>

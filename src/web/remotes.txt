@@ -1,0 +1,3 @@
+# List remote OpenSearch servers here, using modified OpenSearch template syntax.
+# E.g.
+# http://localhost:8080/tnh/opensearch?q={searchTerms}&n={count}&p={startIndex}&h={hitsPerSite}&{s=sites}&{i=indexNames}&{t=types}&{c=collections}
