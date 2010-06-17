@@ -20,7 +20,6 @@
 -->
 <web-app>
 
-<!--
 <servlet>
   <servlet-name>OpenSearch</servlet-name>
   <servlet-class>OpenSearchServlet</servlet-class>
@@ -33,9 +32,9 @@
     <param-value></param-value>
   </init-param>
 </servlet>
--->
 
 <!-- For metasearch, use the following: -->
+<!--
 <servlet>
   <servlet-name>OpenSearch</servlet-name>
   <servlet-class>MetaOpenSearchServlet</servlet-class>
@@ -44,6 +43,7 @@
     <param-value>remotes.txt</param-value>
   </init-param>
 </servlet>
+-->
 
 <!-- The rest is the same for both OpenSearch and MetaOpenSearch -->
 
