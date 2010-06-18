@@ -20,6 +20,7 @@
 -->
 <web-app>
 
+<!-- For stand-alone search, use the following -->
 <servlet>
   <servlet-name>OpenSearch</servlet-name>
   <servlet-class>OpenSearchServlet</servlet-class>
@@ -32,6 +33,16 @@
     <param-value></param-value>
   </init-param>
 </servlet>
+
+<servlet>
+  <servlet-name>Diagnostics</servlet-name>
+  <servlet-class>DiagnosticServlet</servlet-class>
+</servlet>
+
+<servlet-mapping>
+  <servlet-name>Diagnostics</servlet-name>
+  <url-pattern>/info</url-pattern>
+</servlet-mapping>
 
 <!-- For metasearch, use the following: -->
 <!--
