@@ -65,6 +65,8 @@ public class OpenSearchServlet extends HttpServlet
         throw new ServletException( ioe );
       }
     
+    config.getServletContext().setAttribute( "tnh.search", this.searcher );
+
     this.translator = new DefaultQueryTranslator( );
   }
 
