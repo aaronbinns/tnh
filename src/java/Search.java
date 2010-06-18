@@ -29,8 +29,8 @@ public class Search
 {
   private static final DefaultQueryTranslator TRANSLATOR = new DefaultQueryTranslator( );
 
-  private Map<String,Searcher> searchers;
-  private FieldCache           siteCache;
+  public Map<String,Searcher> searchers;
+  public FieldCache           siteCache;
 
   public Search( Searcher searcher )
   {
