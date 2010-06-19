@@ -162,6 +162,13 @@ public class OpenSearchServlet extends HttpServlet
                 raw = getContentFromSegment( hit );
               }
             raw = raw == null ? "" : raw;
+
+            // Replace & and < with their XML entity counterparts to
+            // ensure that any HTML markup in the snippet is escaped
+            // before we do the highlighting.
+            raw = raw.replaceAll( "[&]", "&amp;" );
+            raw = raw.replaceAll( "[<]", "&lt;"  );
+
             for ( String snippet : highlighter.getBestFragments( new SimpleAnalyzer( ), "content", raw, 8 ) )
               {
                 buf.append( snippet );
