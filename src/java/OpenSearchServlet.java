@@ -134,7 +134,17 @@ public class OpenSearchServlet extends HttpServlet
 
             Element item = JDOMHelper.add( channel, "item" );
 
-            JDOMHelper.add( item, "title" , hit.get( "title"  ) );
+            // Replace & and < with their XML entity counterparts to
+            // ensure that any HTML markup in the snippet is escaped
+            // before we do the highlighting.
+            String title = hit.get( "title" );
+            if ( title != null )
+              {
+                title = title.replaceAll( "[&]", "&amp;" );
+                title = title.replaceAll( "[<]", "&lt;"  );
+              }
+            JDOMHelper.add( item, "title" , title );
+
             JDOMHelper.add( item, "link"  , hit.get( "url"    ) );
             JDOMHelper.add( item, OpenSearchHelper.NS_ARCHIVE, "docId",      String.valueOf( result.hits[i].id    ) );
             JDOMHelper.add( item, OpenSearchHelper.NS_ARCHIVE, "score",      String.valueOf( result.hits[i].score ) );
