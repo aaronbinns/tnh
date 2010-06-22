@@ -158,8 +158,6 @@ public class OpenSearchServlet extends HttpServlet
                 JDOMHelper.add( item, "date", date );
               }
 
-            Highlighter highlighter = new Highlighter( new QueryScorer( q, "content" ) );
-            
             StringBuilder buf = new StringBuilder( 100 );
 
             // HACK: Look for the "content" in few places for NutchWAX
@@ -173,12 +171,10 @@ public class OpenSearchServlet extends HttpServlet
               }
             raw = raw == null ? "" : raw;
 
-            // Replace & and < with their XML entity counterparts to
-            // ensure that any HTML markup in the snippet is escaped
-            // before we do the highlighting.
-            raw = raw.replaceAll( "[&]", "&amp;" );
-            raw = raw.replaceAll( "[<]", "&lt;"  );
-
+            Highlighter highlighter = new Highlighter( new SimpleHTMLFormatter(), 
+                                                       new NonBrokenHTMLEncoder(), 
+                                                       new QueryScorer( q, "content" ) );
+            
             for ( String snippet : highlighter.getBestFragments( new SimpleAnalyzer( ), "content", raw, 8 ) )
               {
                 buf.append( snippet );
