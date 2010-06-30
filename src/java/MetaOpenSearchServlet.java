@@ -78,7 +78,7 @@ public class MetaOpenSearchServlet extends HttpServlet
 
     Document doc = meta.query( p, (Map<String,String[]>) request.getParameterMap() );
 
-    (new XMLOutputter()).output( doc, response.getOutputStream( ) );
+    OpenSearchHelper.writeResponse( doc, response );
   }
 
   public QueryParameters getQueryParameters( HttpServletRequest request )
