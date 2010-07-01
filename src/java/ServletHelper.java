@@ -241,7 +241,17 @@ public class ServletHelper
         return u;
       }
 
-    return new URL( location );
+    // Use the current working directory as the context fo the
+    // location.  This way, if the location is a relative file path,
+    // it will be found relative to the CWD.
+    //
+    // If the location is a full path, the full path will be used.
+    //
+    // If the location is a URL (i.e. has a scheme) that will be used
+    // and the context is ignored.
+    u = new URL( new URL( "file://" + System.getProperty( "user.dir" ) + "/" ), location);
+
+    return u;
   }
 
 }
