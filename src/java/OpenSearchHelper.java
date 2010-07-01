@@ -97,16 +97,28 @@ public class OpenSearchHelper
   }
 
   /**
-   * Helper function to serialize out the JDOM Document to the reponse.
+   * Helper function to serialize out the JDOM Document to the
+   * reponse.  Default Content-Type is "application/xml".
    */
   public static void writeResponse( Document doc, HttpServletResponse response )
     throws IOException
   {
-    // Enforce the OpenSearch RSS Content-Type in the HTTP response.
-    response.setContentType( "application/rss+xml" );
+    writeResponse( doc, response, "application/xml" );
+  }
+
+  /**
+   * Helper function to serialize out the JDOM Document to the reponse
+   * along with explicit Content-Type.
+   */
+  public static void writeResponse( Document doc, HttpServletResponse response, String contentType )
+    throws IOException
+  {
+    // Enforce the Content-Type in the HTTP response.
+    response.setContentType( contentType );
 
     // TODO: Is creating a new XMLOutputter every time a good idea?
     (new XMLOutputter()).output( doc, response.getOutputStream( ) );
   }
+
 
 }

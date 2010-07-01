@@ -188,7 +188,7 @@ public class OpenSearchServlet extends HttpServlet
         
         long buildResultsTime = System.nanoTime();
 
-        OpenSearchHelper.writeResponse( doc, response );
+        OpenSearchHelper.writeResponse( doc, response, "application/rss+xml" );
 
         long writeResponseTime = System.nanoTime();
 
