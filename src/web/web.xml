@@ -54,6 +54,7 @@
     <param-name>remotes</param-name>
     <param-value>remotes.txt</param-value>
   </init-param>
+  <load-on-startup>1</load-on-startup>
 </servlet>
 -->
 
