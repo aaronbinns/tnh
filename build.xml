@@ -16,7 +16,7 @@
       <echo message="Found revision: ${head}"/>
       <exec executable="git" outputproperty="dirty">
         <arg value="diff" />
-        <arg value="--shortstatt" />
+        <arg value="--shortstat" />
       </exec>
       <condition property="@{output}" value="${head}" else="${head}-dirty">
         <equals arg1="${dirty}" arg2="" />
