@@ -6,6 +6,24 @@
 
   <target name="all" depends="war" />
 
+  <macrodef name="git-revision">
+    <attribute name="output" />
+    <sequential>
+      <exec executable="git" outputproperty="head">
+        <arg value="rev-parse" />
+        <arg value="HEAD" />
+      </exec>
+      <echo message="Found revision: ${head}"/>
+      <exec executable="git" outputproperty="dirty">
+        <arg value="diff" />
+        <arg value="--shortstatt" />
+      </exec>
+      <condition property="@{output}" value="${head}" else="${head}-dirty">
+        <equals arg1="${dirty}" arg2="" />
+      </condition>
+    </sequential>
+  </macrodef>
+
   <target name="compile">
     <mkdir dir="${build.dir}/classes" />
     <javac 
@@ -28,8 +46,9 @@
   </target>
 
   <target name="war" depends="compile">
+    <git-revision output="git.rev"></git-revision>
     <war compress="true" 
-         destfile="${build.dir}/search.war"
+         destfile="${build.dir}/tnh-${git.rev}.war"
          webxml="${src.dir}/web/web.xml">
       <classes dir="build/classes" />
       <lib dir="lib">
