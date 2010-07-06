@@ -13,7 +13,7 @@
         <arg value="rev-parse" />
         <arg value="HEAD" />
       </exec>
-      <echo message="Found revision: ${head}"/>
+      <echo message="Git revision: ${head}"/>
       <exec executable="git" outputproperty="dirty">
         <arg value="diff" />
         <arg value="--shortstat" />
@@ -47,6 +47,7 @@
 
   <target name="war" depends="compile">
     <git-revision output="git.rev"></git-revision>
+    <echo message="${git.rev}" file="${build.dir}/version" />
     <war compress="true" 
          destfile="${build.dir}/tnh-${git.rev}.war"
          webxml="${src.dir}/web/web.xml">
@@ -63,6 +64,9 @@
       </zipfileset>
       <fileset dir="${src.dir}/web">
         <include name="favicon.*" />
+      </fileset>
+      <fileset dir="${build.dir}">
+        <include name="version" />
       </fileset>
     </war>
   </target>
