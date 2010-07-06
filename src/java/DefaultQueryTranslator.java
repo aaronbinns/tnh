@@ -63,13 +63,15 @@ public class DefaultQueryTranslator
 
         if ( term.length() == 0 ) continue ;
 
+        term = term.toLowerCase();
+
         if ( isMinus )
           {
-            minus.add( term.toLowerCase( ) );
+            minus.add( term );
           }
         else 
           {
-            terms.add( term.toLowerCase( ) );
+            terms.add( term );
           }
       }
     
