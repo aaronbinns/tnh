@@ -16,6 +16,7 @@
 
 import java.io.*;
 import java.util.*;
+import java.util.zip.*;
 import java.util.logging.Logger;
 import javax.servlet.*;
 import javax.servlet.http.*;
@@ -158,23 +159,14 @@ public class OpenSearchServlet extends HttpServlet
                 JDOMHelper.add( item, "date", date );
               }
 
-            StringBuilder buf = new StringBuilder( 100 );
+            String raw = getContent( hit );
 
-            // HACK: Look for the "content" in few places for NutchWAX
-            //       backwards-compatibility:
-            //         1. In "content" field of the Lucene document
-            //         2. In NutchWAX segment directory.
-            String raw = hit.get( "content" );
-            if ( raw == null )
-              {
-                raw = getContentFromSegment( hit );
-              }
-            raw = raw == null ? "" : raw;
+            StringBuilder buf = new StringBuilder( 100 );
 
             Highlighter highlighter = new Highlighter( new SimpleHTMLFormatter(), 
                                                        new NonBrokenHTMLEncoder(), 
                                                        new QueryScorer( q, "content" ) );
-            
+
             for ( String snippet : highlighter.getBestFragments( new SimpleAnalyzer( ), "content", raw, 8 ) )
               {
                 buf.append( snippet );
@@ -235,6 +227,64 @@ public class OpenSearchServlet extends HttpServlet
     p.types      = ServletHelper.getParam( request, "t", QueryParameters.EMPTY_STRINGS );
     
     return p;
+  }
+
+  /*
+   * Nasty bit of hackery to obtain the "content" from one of a few
+   * possible places:
+   *   1. In "content" field as a byte[], then uncompress with gzip.
+   *   2. In "content" field of the Lucene document as a String.
+   *   3. In NutchWAX segment directory.
+   *
+   * Lucene indices built with NutchWAX 0.12 don't store the content
+   * field, we have to find the value in the segment (#3).
+   *
+   * Indices built with a hacked version of NutchWAX 0.13 using Lucene
+   * 2.x have the "content" stored in gzipped form.  The Lucene
+   * library auto-gunzips it for us.  It's totally transparent. (#2)
+   *
+   * Indices built with NutchWAX using Lucene 3.0.x do the gzip/gunzip
+   * manually.  The Lucene dev team took out the automagic gzipping
+   * when building an index, so we have to do it ourselves. (#1). 
+   */
+  public String getContent( org.apache.lucene.document.Document hit )
+    throws IOException
+  {
+    // If the 'content' field is stored as a binary value, we assume
+    // that it's gzipped and gunzip it.
+    byte[] rawbytes = hit.getBinaryValue( "content" );
+
+    if ( rawbytes != null )
+      {
+        ByteArrayInputStream bais = new ByteArrayInputStream( rawbytes );
+        GZIPInputStream       gis = new GZIPInputStream( bais );
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream( 16 * 1024 );
+        byte[] bbuf = new byte[16*1024];
+        int count = -1;
+        while ( (count = gis.read( bbuf )) > -1 )
+          {
+            baos.write( bbuf, 0, count );
+          }
+        
+        String raw = baos.toString( "utf-8" );
+
+        return raw;
+      }
+
+    // Not a binary, if we can get it as a String, then do that.
+    String raw = hit.get( "content" );
+
+    if ( raw == null )
+      {
+        // No string value, try the segment.
+        raw = getContentFromSegment( hit );
+      }
+
+    // Never return null, return empty string instead.
+    raw = raw == null ? "" : raw;
+    
+    return raw;
   }
 
   public String getContentFromSegment( org.apache.lucene.document.Document hit )
