@@ -24,8 +24,9 @@ import javax.servlet.http.*;
 import org.jdom.*;
 import org.jdom.output.XMLOutputter;
 
-import org.apache.lucene.search.*;
 import org.apache.lucene.analysis.*;
+import org.apache.lucene.document.CompressionTools;
+import org.apache.lucene.search.*;
 import org.apache.lucene.search.highlight.*;
 
 
@@ -232,7 +233,7 @@ public class OpenSearchServlet extends HttpServlet
   /*
    * Nasty bit of hackery to obtain the "content" from one of a few
    * possible places:
-   *   1. In "content" field as a byte[], then uncompress with gzip.
+   *   1. In "content" field as a byte[], then uncompress.
    *   2. In "content" field of the Lucene document as a String.
    *   3. In NutchWAX segment directory.
    *
@@ -240,36 +241,35 @@ public class OpenSearchServlet extends HttpServlet
    * field, we have to find the value in the segment (#3).
    *
    * Indices built with a hacked version of NutchWAX 0.13 using Lucene
-   * 2.x have the "content" stored in gzipped form.  The Lucene
+   * 2.x have the "content" stored in compressed form.  The Lucene
    * library auto-gunzips it for us.  It's totally transparent. (#2)
    *
-   * Indices built with NutchWAX using Lucene 3.0.x do the gzip/gunzip
-   * manually.  The Lucene dev team took out the automagic gzipping
-   * when building an index, so we have to do it ourselves. (#1). 
+   * Indices built with NutchWAX using Lucene 3.0.x do the
+   * compression/decompression manually using Lucene's
+   * CompressionTools class.  The Lucene dev team took out the
+   * automagic compressing when indexing, so we have to do it
+   * ourselves. (#1).
    */
   public String getContent( org.apache.lucene.document.Document hit )
     throws IOException
   {
     // If the 'content' field is stored as a binary value, we assume
-    // that it's gzipped and gunzip it.
+    // that it is a compressed String and uncompress it.
     byte[] rawbytes = hit.getBinaryValue( "content" );
 
     if ( rawbytes != null )
       {
-        ByteArrayInputStream bais = new ByteArrayInputStream( rawbytes );
-        GZIPInputStream       gis = new GZIPInputStream( bais );
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream( 16 * 1024 );
-        byte[] bbuf = new byte[16*1024];
-        int count = -1;
-        while ( (count = gis.read( bbuf )) > -1 )
+        try
           {
-            baos.write( bbuf, 0, count );
-          }
-        
-        String raw = baos.toString( "utf-8" );
+            String raw = CompressionTools.decompressString( rawbytes );
 
-        return raw;
+            return raw;
+          }
+        catch ( java.util.zip.DataFormatException dfe )
+          {
+            // If the format isn't valid, continue looking in the
+            // other places.
+          }
       }
 
     // Not a binary, if we can get it as a String, then do that.
