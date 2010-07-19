@@ -203,7 +203,7 @@
       <xsl:value-of select="description" />
     &lt;/div>
     &lt;div class="details">
-      <xsl:value-of select="concat( $wayback, $collection, '/', date, '/', link )" /> - <xsl:value-of select="round( archive:length div 1024 )"/>k - <xsl:value-of select="archive:type" />
+      <xsl:value-of select="link" /> - <xsl:value-of select="round( archive:length div 1024 )"/>k - <xsl:value-of select="archive:type" />
     &lt;/div>
     &lt;div class="dates">
       <xsl:text>&lt;a</xsl:text><xsl:text> href=&quot;</xsl:text><xsl:value-of select="concat( $wayback, $collection, '/*/', link )" /><xsl:text>&quot;</xsl:text><xsl:text>></xsl:text>
