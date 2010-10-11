@@ -104,7 +104,7 @@
        redirectWelcome  true
   -->
 <welcome-file-list>
-  <welcome-file>/search</welcome-file>
+  <welcome-file>search</welcome-file>
 </welcome-file-list>
 
 </web-app>
