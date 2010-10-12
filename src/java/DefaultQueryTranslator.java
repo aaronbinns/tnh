@@ -59,7 +59,7 @@ public class DefaultQueryTranslator
         //   \p{L}  -- All Unicode letters
         //   \p{N}  -- All Unicode numbers
         // Anything that is not a letter|number or '-' is stripped.
-        term = term.replaceAll( "[^\\p{L}\\p{N}-']", " " );
+        term = term.replaceAll( "[^\\p{L}\\p{N}-]", " " );
 
         if ( term.length() == 0 ) continue ;
 
