@@ -27,6 +27,7 @@ public class QueryParameters
   String[] indexNames  = ALL_INDEXES;
   String[] collections = EMPTY_STRINGS;
   String[] types       = EMPTY_STRINGS;
+  String[] dates       = EMPTY_STRINGS;
 
   public QueryParameters()
   {
@@ -42,5 +43,6 @@ public class QueryParameters
     this.indexNames  = other.indexNames;
     this.collections = other.collections;
     this.types       = other.types;
+    this.dates       = other.dates;
   }
 }

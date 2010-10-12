@@ -90,6 +90,7 @@ public class OpenSearchServlet extends HttpServlet
         this.translator.addGroup( q, "site", p.sites );
         this.translator.addGroup( q, "type", p.types );
         this.translator.addGroup( q, "collection", p.collections );
+        this.translator.addGroup( q, "date", p.dates );
 
         long parseQueryTime = System.nanoTime();
 
@@ -147,7 +148,7 @@ public class OpenSearchServlet extends HttpServlet
               }
             JDOMHelper.add( item, "title" , title );
 
-            JDOMHelper.add( item, "link"  , hit.get( "url"    ) );
+            JDOMHelper.add( item, "link"  , hit.get( "url" ) );
             JDOMHelper.add( item, OpenSearchHelper.NS_ARCHIVE, "docId",      String.valueOf( result.hits[i].id    ) );
             JDOMHelper.add( item, OpenSearchHelper.NS_ARCHIVE, "score",      String.valueOf( result.hits[i].score ) );
             JDOMHelper.add( item, OpenSearchHelper.NS_ARCHIVE, "site",       result.hits[i].site  );
@@ -218,15 +219,16 @@ public class OpenSearchServlet extends HttpServlet
   {
     QueryParameters p = new QueryParameters( );
     
-    p.query      = ServletHelper.getParam( request, "q", "" );
-    p.start      = ServletHelper.getParam( request, "p", 0 );
-    p.hitsPerPage= ServletHelper.getParam( request, "n", this.hitsPerPage );
-    p.hitsPerSite= ServletHelper.getParam( request, "h", this.hitsPerSite );
-    p.sites      = ServletHelper.getParam( request, "s", QueryParameters.EMPTY_STRINGS );
-    p.indexNames = ServletHelper.getParam( request, "i", QueryParameters.ALL_INDEXES );
-    p.collections= ServletHelper.getParam( request, "c", QueryParameters.EMPTY_STRINGS );
-    p.types      = ServletHelper.getParam( request, "t", QueryParameters.EMPTY_STRINGS );
-    
+    p.query      = ServletHelper.getParam( request, "q",  "" );
+    p.start      = ServletHelper.getParam( request, "p",  0 );
+    p.hitsPerPage= ServletHelper.getParam( request, "n",  this.hitsPerPage );
+    p.hitsPerSite= ServletHelper.getParam( request, "h",  this.hitsPerSite );
+    p.sites      = ServletHelper.getParam( request, "s",  QueryParameters.EMPTY_STRINGS );
+    p.indexNames = ServletHelper.getParam( request, "i",  QueryParameters.ALL_INDEXES );
+    p.collections= ServletHelper.getParam( request, "c",  QueryParameters.EMPTY_STRINGS );
+    p.types      = ServletHelper.getParam( request, "t",  QueryParameters.EMPTY_STRINGS );
+    p.dates      = ServletHelper.getParam( request, "d",  QueryParameters.EMPTY_STRINGS );
+
     return p;
   }
 
