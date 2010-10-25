@@ -94,8 +94,20 @@ public class OpenSearchServlet extends HttpServlet
 
         long parseQueryTime = System.nanoTime();
 
-        p.indexNames = removeUnknownIndexNames( p.indexNames );
-        
+        if ( Arrays.equals( p.indexNames, QueryParameters.ALL_INDEXES ) )
+          {
+            if ( p.excludes.length > 0 )
+              {
+                // If there are indexes to exclude, exclude them.
+                p.indexNames = removeExcludes( p.excludes );
+              }
+          }
+        else
+          {
+            // There are explicitly named indexes.  Weed out any unknown names.
+            p.indexNames = removeUnknownIndexNames( p.indexNames );
+          }
+
         Search.Result result;
         if ( p.indexNames.length == 0 )
           {
@@ -215,6 +227,26 @@ public class OpenSearchServlet extends HttpServlet
     return known.toArray( new String[known.size()] );
   }
 
+  public String[] removeExcludes( String[] excludes )
+  {
+    // No explicit indexes requested, but if there are
+    // excludes, then create a new list of indexes with all
+    // the names except those to be excluded.
+    Set<String> names = new HashSet<String>( this.searcher.getIndexNames( ) );
+    
+    // First, remove the magic "all indexes" name.
+    names.remove( "" );
+    
+    // Then, remove all the names in the exclude list.
+    for ( int i = 0 ; i < excludes.length ; i++ )
+      {
+        names.remove( excludes[i] );
+      }
+    
+    // Lastly, keep the new list of index names.
+    return names.toArray( new String[names.size()] );
+  }
+
   public QueryParameters getQueryParameters( HttpServletRequest request )
   {
     QueryParameters p = new QueryParameters( );
@@ -224,7 +256,8 @@ public class OpenSearchServlet extends HttpServlet
     p.hitsPerPage= ServletHelper.getParam( request, "n",  this.hitsPerPage );
     p.hitsPerSite= ServletHelper.getParam( request, "h",  this.hitsPerSite );
     p.sites      = ServletHelper.getParam( request, "s",  QueryParameters.EMPTY_STRINGS );
-    p.indexNames = ServletHelper.getParam( request, "i",  QueryParameters.ALL_INDEXES );
+    p.indexNames = ServletHelper.getParam( request, "i",  QueryParameters.ALL_INDEXES   );
+    p.excludes   = ServletHelper.getParam( request, "x",  QueryParameters.EMPTY_STRINGS );
     p.collections= ServletHelper.getParam( request, "c",  QueryParameters.EMPTY_STRINGS );
     p.types      = ServletHelper.getParam( request, "t",  QueryParameters.EMPTY_STRINGS );
     p.dates      = ServletHelper.getParam( request, "d",  QueryParameters.EMPTY_STRINGS );

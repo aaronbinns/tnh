@@ -25,6 +25,7 @@ public class QueryParameters
   int      hitsPerSite;
   String[] sites       = EMPTY_STRINGS;
   String[] indexNames  = ALL_INDEXES;
+  String[] excludes    = EMPTY_STRINGS;
   String[] collections = EMPTY_STRINGS;
   String[] types       = EMPTY_STRINGS;
   String[] dates       = EMPTY_STRINGS;
@@ -41,6 +42,7 @@ public class QueryParameters
     this.hitsPerSite = other.hitsPerSite;
     this.sites       = other.sites;
     this.indexNames  = other.indexNames;
+    this.excludes    = other.excludes;
     this.collections = other.collections;
     this.types       = other.types;
     this.dates       = other.dates;

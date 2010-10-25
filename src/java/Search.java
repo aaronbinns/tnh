@@ -72,6 +72,11 @@ public class Search
     return this.searchers.containsKey( name );
   }
 
+  public Set<String> getIndexNames( )
+  {
+    return this.searchers.keySet( );
+  }
+
   public Result search( String query, int maxHits, int hitsPerSite )
     throws Exception
   {

@@ -44,7 +44,8 @@ public class QueryParametersFilter implements Filter
     p.hitsPerPage= ServletHelper.getParam( request, "n", this.hitsPerPage );
     p.hitsPerSite= ServletHelper.getParam( request, "h", this.hitsPerSite );
     p.sites      = ServletHelper.getParam( request, "s", QueryParameters.EMPTY_STRINGS );
-    p.indexNames = ServletHelper.getParam( request, "i", QueryParameters.ALL_INDEXES );
+    p.indexNames = ServletHelper.getParam( request, "i", QueryParameters.ALL_INDEXES   );
+    p.excludes   = ServletHelper.getParam( request, "x", QueryParameters.EMPTY_STRINGS );
     p.collections= ServletHelper.getParam( request, "c", QueryParameters.EMPTY_STRINGS );
     p.types      = ServletHelper.getParam( request, "t", QueryParameters.EMPTY_STRINGS );
     
