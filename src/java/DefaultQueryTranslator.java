@@ -35,6 +35,11 @@ public class DefaultQueryTranslator
 
   public BooleanQuery translate( String query )
   {
+    return this.translate( query, true );
+  }
+
+  public BooleanQuery translate( String query, boolean foldAccents )
+  {
     List<String> terms = new ArrayList<String>( 8 );
     List<String> minus = new ArrayList<String>( 8 );
 
@@ -65,6 +70,8 @@ public class DefaultQueryTranslator
 
         term = term.toLowerCase();
 
+        if ( foldAccents ) term = ASCIIFolder.fold( term );
+
         if ( isMinus )
           {
             minus.add( term );
@@ -85,7 +92,7 @@ public class DefaultQueryTranslator
     BooleanQuery q = new BooleanQuery( );
     q.add( bq, BooleanClause.Occur.MUST );
 
-   return q;
+    return q;
   }
 
   public void fieldGroup( BooleanQuery bq, List<String> terms, String field, float boost )
@@ -170,7 +177,7 @@ public class DefaultQueryTranslator
         return pq;
       }
   }
-
+  
   public static void main( String[] args )
     throws Exception
   {
@@ -181,12 +188,12 @@ public class DefaultQueryTranslator
       }
     
     String query = args[0]; 
-
+    
     DefaultQueryTranslator translator = new DefaultQueryTranslator( );
     
     BooleanQuery q = translator.translate( query );
-
+    
     System.out.println( "q: " + q.toString( ) );
   }
-
+  
 }
