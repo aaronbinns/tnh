@@ -181,7 +181,7 @@ public class OpenSearchServlet extends HttpServlet
                                                        new NonBrokenHTMLEncoder(), 
                                                        new QueryScorer( q, "content" ) );
 
-            for ( String snippet : highlighter.getBestFragments( new SimpleAnalyzer( ), "content", raw, 8 ) )
+            for ( String snippet : highlighter.getBestFragments( new CustomAnalyzer( ), "content", raw, 8 ) )
               {
                 buf.append( snippet );
                 buf.append( "..." );
