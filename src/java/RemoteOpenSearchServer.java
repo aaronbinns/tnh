@@ -117,10 +117,12 @@ class RemoteOpenSearchServer
     url = url.replaceAll( "[{]count[}]"      , String.valueOf( p.hitsPerPage ) );
     url = url.replaceAll( "[{]hitsPerSite[}]", String.valueOf( p.hitsPerSite ) );
 
-    url = replaceMultiple( url, "sites", p.sites );
-    url = replaceMultiple( url, "indexNames", p.indexNames );
-    url = replaceMultiple( url, "collections", p.collections);
-    url = replaceMultiple( url, "types", p.types );
+    url = replaceMultiple( url, "sites",       p.sites       );
+    url = replaceMultiple( url, "indexNames",  p.indexNames  );
+    url = replaceMultiple( url, "collections", p.collections );
+    url = replaceMultiple( url, "types",       p.types       );
+    url = replaceMultiple( url, "dates",       p.dates       );
+    url = replaceMultiple( url, "excludes",    p.excludes    );
 
     // We don't know about any optional parameters, so we remove them (per the OpenSearch spec.)
     url = url.replaceAll( "[{][^}]+?[}]", "" );
