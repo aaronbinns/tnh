@@ -14,7 +14,8 @@ import org.apache.lucene.util.Version;
  */
 public class CustomAnalyzer extends Analyzer
 {
-  boolean omitNonAlpha = true;
+  boolean foldAccents  = false;
+  boolean omitNonAlpha = false;
   Set<?> stopWords;
 
   public CustomAnalyzer( )
@@ -22,12 +23,6 @@ public class CustomAnalyzer extends Analyzer
 
   }
 
-  public CustomAnalyzer( boolean omitNonAlpha, Set<?> stopWords )
-  {
-    this.omitNonAlpha = omitNonAlpha;
-    this.stopWords    = stopWords;
-  }
-  
   public void setStopWords( Set<?> stopWords )
   {
     this.stopWords = stopWords;
@@ -48,12 +43,25 @@ public class CustomAnalyzer extends Analyzer
     return this.omitNonAlpha;
   }
 
+  public void setFoldAccents( boolean foldAccents )
+  {
+    this.foldAccents = foldAccents;
+  }
+
+  public boolean getFoldAccents( )
+  {
+    return this.foldAccents;
+  }
+
   public TokenStream tokenStream( String fieldName, Reader reader )
   {
     TokenStream stream = new StandardTokenizer( Version.LUCENE_30, reader );
     stream = new StandardFilter( stream );
     stream = new LowerCaseFilter( stream );
-    stream = new ASCIIFoldingFilter( stream );
+    if ( this.foldAccents )
+      {
+        stream = new ASCIIFoldingFilter( stream );
+      }
     if ( this.omitNonAlpha )
       {
         stream = new NonAlphaFilter( stream );
