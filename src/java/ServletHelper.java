@@ -130,6 +130,26 @@ public class ServletHelper
   }
 
   /**
+   * Convenience function to parse a configuration parameter value as a Boolean.
+   * If it cannot be parsed, the default value is used.
+   * If it can be parsed and is not greater than the minValue, a ServletException is thrown.
+   */  
+  public static boolean getInitParameter( ServletConfig config, String name, Boolean defaultValue )
+  {
+    return Boolean.parseBoolean( validate( name, config.getInitParameter( name ), defaultValue.toString( ) ) );
+  }
+
+  /**
+   * Convenience function to parse a configuration parameter value as a Boolean.
+   * If it cannot be parsed, the default value is used.
+   * If it can be parsed and is not greater than the minValue, a ServletException is thrown.
+   */  
+  public static boolean getInitParameter( FilterConfig config, String name, Boolean defaultValue )
+  {
+    return Boolean.parseBoolean( validate( name, config.getInitParameter( name ), defaultValue.toString( ) ) );
+  }
+
+  /**
    * Convenience function to get an servlet init parameter value, returning a given default
    * value if <code>null</code> or empty.
    */
