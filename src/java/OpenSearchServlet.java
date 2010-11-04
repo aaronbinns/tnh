@@ -34,12 +34,13 @@ public class OpenSearchServlet extends HttpServlet
 {
   public static final Logger LOG = Logger.getLogger( OpenSearchServlet.class.getName() );
 
-  public int    hitsPerPage;
-  public int    hitsPerSite;
-  public int    indexDivisor;
-  public String indexPath;
-  public String segmentPath;
-  public Search searcher;
+  public int     hitsPerPage;
+  public int     hitsPerSite;
+  public int     indexDivisor;
+  public String  indexPath;
+  public String  segmentPath;
+  public boolean foldAccents;
+  public Search  searcher;
   
   public DefaultQueryTranslator translator;
   public Segments segments;
@@ -52,6 +53,7 @@ public class OpenSearchServlet extends HttpServlet
     this.indexDivisor = ServletHelper.getInitParameter( config, "indexDivisor", 10, 1 );
     this.indexPath    = ServletHelper.getInitParameter( config, "index",    false );
     this.segmentPath  = ServletHelper.getInitParameter( config, "segments", true );
+    this.foldAccents  = ServletHelper.getInitParameter( config, "foldAccents", Boolean.TRUE );
 
     try
       {
@@ -85,7 +87,7 @@ public class OpenSearchServlet extends HttpServlet
             p = getQueryParameters( request );
           }
 
-        BooleanQuery q = this.translator.translate( p.query );
+        BooleanQuery q = this.translator.translate( p.query, this.foldAccents );
 
         this.translator.addGroup( q, "site", p.sites );
         this.translator.addGroup( q, "type", p.types );
@@ -180,8 +182,11 @@ public class OpenSearchServlet extends HttpServlet
             Highlighter highlighter = new Highlighter( new SimpleHTMLFormatter(), 
                                                        new NonBrokenHTMLEncoder(), 
                                                        new QueryScorer( q, "content" ) );
+            
+            CustomAnalyzer analyzer = new CustomAnalyzer( );
+            analyzer.setFoldAccents( this.foldAccents );
 
-            for ( String snippet : highlighter.getBestFragments( new CustomAnalyzer( ), "content", raw, 8 ) )
+            for ( String snippet : highlighter.getBestFragments( analyzer, "content", raw, 8 ) )
               {
                 buf.append( snippet );
                 buf.append( "..." );
