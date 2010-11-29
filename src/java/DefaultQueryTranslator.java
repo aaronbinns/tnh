@@ -85,6 +85,7 @@ public class DefaultQueryTranslator
     BooleanQuery bq = new BooleanQuery( );
     fieldGroup( bq, terms, "url"  ,   (float) 4.0 );
     fieldGroup( bq, terms, "title",   (float) 3.0 );
+    fieldGroup( bq, terms, "boiled",  (float) 2.5 );
     fieldGroup( bq, terms, "content", (float) 1.5 );
     if ( terms.size( ) > 1 ) mixAndMatch( bq, terms );
     minuses( bq, minus );
