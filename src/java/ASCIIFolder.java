@@ -1,26 +1,40 @@
-/*
- * Copyright 2010 Internet Archive
+/**
+ * This code is derived from the class ASCIIFoldingFilter distributed
+ * with Lucene 3.0.1.  The original license is as follows:
  *
- * Licensed under the Apache License, Version 2.0 (the "License"); you
- * may not use this file except in compliance with the License. You
- * may obtain a copy of the License at
+ *   Licensed to the Apache Software Foundation (ASF) under one or
+ *   more contributor license agreements.  See the NOTICE file
+ *   distributed with this work for additional information regarding
+ *   copyright ownership.  The ASF licenses this file to You under the
+ *   Apache License, Version 2.0 (the "License"); you may not use this
+ *   file except in compliance with the License.  You may obtain a
+ *   copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
- * implied. See the License for the specific language governing
- * permissions and limitations under the License.
+ *   Unless required by applicable law or agreed to in writing,
+ *   software distributed under the License is distributed on an "AS
+ *   IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ *   express or implied.  See the License for the specific language
+ *   governing permissions and limitations under the License.
  */
 
 import java.io.*;
 import java.util.*;
 
-
+/**
+ * Simple wrapper around the logic to map accented characters (and
+ * similar) to their unaccented equivalents.  AFAIK, this does not
+ * follow any established standard (is there one?), rather it goes by
+ * intuition and reasoning of the original author.
+ */
 public class ASCIIFolder
 {
   
+  /**
+   * Replaces the accented characters with their unaccented
+   * equivalents.
+   */
   public static String fold( String s )
   {
     char[] output = new char[s.length()*4];
