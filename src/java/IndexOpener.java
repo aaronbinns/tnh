@@ -24,9 +24,26 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.index.IndexReader;
 
+import org.apache.lucene.index.ArchiveParallelReader;
+
 
 public class IndexOpener
 {
+  public static FileFilter DIR_FILTER = new FileFilter( )
+    {
+      public boolean accept( File pathname )
+      {
+        return pathname.isDirectory( );
+      }
+    };
+  
+  public static FileFilter PARALLEL_FILTER = new FileFilter( )
+    {
+      public boolean accept( File pathname )
+      {
+        return "_parallel".equals( pathname.getName().toLowerCase( ) );
+      }
+    };
   
   public static Map<String,Searcher> open( String indexPath )
     throws IOException
@@ -71,13 +88,7 @@ public class IndexOpener
           }
 
         // Let's try opening sub-dirs as indexes.
-        File[] subDirs = indexDir.listFiles( new FileFilter( )
-          {
-            public boolean accept( File pathname )
-            {
-              return pathname.isDirectory( );
-            }
-          } );
+        File[] subDirs = indexDir.listFiles( DIR_FILTER );
         
         if ( subDirs == null || subDirs.length == 0 ) throw new IllegalArgumentException( "No sub-dirs for: " + indexPath );
         
@@ -86,7 +97,8 @@ public class IndexOpener
           {
             File subDir = subDirs[i];
 
-            IndexSearcher searcher = new IndexSearcher( IndexReader.open( new NIOFSDirectory( subDir ), true ) );
+            // IndexSearcher searcher = new IndexSearcher( IndexReader.open( new NIOFSDirectory( subDir ), true ) );
+            Searcher searcher = subsearcher( subDir );
             
             searchers.put( subDir.getName( ), searcher );
 
@@ -102,4 +114,50 @@ public class IndexOpener
 
     return searchers;
   }
+
+  public static Searcher subsearcher( File directory )
+    throws IOException
+  {
+    if ( ! directory.isDirectory( ) ) throw new IllegalArgumentException( "not a directory: " + directory );
+
+    File[] subDirs = directory.listFiles( DIR_FILTER );
+
+    // If there are no sub-dirs, just open this as an IndexSearcher
+    if ( subDirs.length == 0 )
+      {
+        IndexSearcher searcher = new IndexSearcher( IndexReader.open( new NIOFSDirectory( directory ), true ) );
+        
+        return searcher;
+      }
+
+    // This directory has sub-dirs, and they are parallel.
+    if ( directory.listFiles( PARALLEL_FILTER ).length == 1 )
+      {
+        ArchiveParallelReader preader = new ArchiveParallelReader( );
+        for ( int i = 0; i < subDirs.length ; i++ )
+          {
+            preader.add( IndexReader.open( new NIOFSDirectory( subDirs[i] ), true ) );
+          }
+        
+        IndexSearcher searcher = new IndexSearcher( preader );
+
+        return searcher;
+      }
+
+    // This directory has sub-dirs, but they are not parallel
+    Searchable subSearchers[] = new Searchable[subDirs.length];
+    for ( int i = 0; i < subDirs.length ; i++ )
+      {
+        File subDir = subDirs[i];
+        
+        Searcher searcher = subsearcher( subDir );
+
+        subSearchers[i] = searcher;
+      }
+
+    MultiSearcher multi = new MultiSearcher( subSearchers );
+
+    return multi;
+  }
+  
 }
