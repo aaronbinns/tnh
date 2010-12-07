@@ -36,7 +36,7 @@
            fork="true"
            deprecation="true">
       <src path="${src.dir}/java" />
-      <include name="*.java" />
+      <include name="**/*.java" />
       <classpath>
         <fileset dir="${lib.dir}">
           <include name="*.jar"/>
