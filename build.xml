@@ -47,7 +47,7 @@
 
   <target name="war" depends="compile">
     <git-revision output="git.rev"></git-revision>
-    <echo message="${git.rev}" file="${build.dir}/version" />
+    <echo message="${git.rev}${line.separator}" file="${build.dir}/version" />
     <war compress="true" 
          destfile="${build.dir}/tnh-${git.rev}.war"
          webxml="${src.dir}/web/web.xml">
