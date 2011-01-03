@@ -23,10 +23,67 @@ import org.apache.lucene.search.MultiSearcher;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiReader;
 
 import org.apache.lucene.index.ArchiveParallelReader;
 
-
+/**
+ * Utility class to create a possibly complex structure of Lucene
+ * indexes representing a combination of named index shards and
+ * parallel indexes.
+ *
+ * Call <code>open</code> with the root path of a directory hierarchy
+ * containing a mix of per-index collections, shards and parallel
+ * indexes and a Map&lt;String,Searcher&gt; is returned.
+ *
+ * The directory structures handled by this class are of the form:
+ *
+ * index/
+ *
+ *   Plain old single lucene index.
+ *
+ * index/
+ *   collectionA/
+ *   collectionB/
+ *   collectionC/
+ *
+ *   Where collections A, B, and C are Lucene indexes.  The
+ *   resulting Map will contain Searcher objects for each, 
+ *   mapped to their corresponding directory names.
+ *
+ * index/
+ *   collectionA/
+ *   collectionB/
+ *     shard1/
+ *     shard2/
+ *     shard3/
+ *   collectionC/
+ *
+ *   Similar to the above, but in addition, collectionB will
+ *   be a MultiSearcher spanning the three shards, each of
+ *   which is a IndexSearcher.
+ *
+ * index/
+ *   collectionA/
+ *     _parallel
+ *     dates/
+ *     main/
+ *   collectionB/
+ *     shard1/
+ *       _parallel
+ *       dates/
+ *       main/
+ *     shard2/
+ *   collectionC/
+ *
+ *   In this case, collectionA has two sub-dirs, but since the magic
+ *   file "_parallel" is present, they are treated as parallel
+ *   sub-dirs rather than shards.  Similarly for collection B, 
+ *   the first shard has parallel sub-dirs, but the second does not.
+ *
+ * In all of the above examples, only the collection-level indexes are
+ * in the Map&lt;String,Searcher&gt;, and thus able to be looked-up by name.
+ */
 public class IndexOpener
 {
   public static FileFilter DIR_FILTER = new FileFilter( )
@@ -44,92 +101,88 @@ public class IndexOpener
         return "_parallel".equals( pathname.getName().toLowerCase( ) );
       }
     };
-  
+
+  /**
+   * Open an index tree rooted at the given <code>indexPath</code>.
+   */
   public static Map<String,Searcher> open( String indexPath )
     throws IOException
   {
-    return open( indexPath, true, 1 );
+    return open( indexPath, 1 );
   }
 
-  public static Map<String,Searcher> open( String indexPath, boolean trySubDirs )
-    throws IOException
-  {
-    return open( indexPath, trySubDirs, 1 );
-  }
-
+  /**
+   * Open an index tree rooted at the given <code>indexPath</code>. Also use
+   * the given <code>indexDivisor</code> when opening the indexes.
+   */
   public static Map<String,Searcher> open( String indexPath, int indexDivisor )
-    throws IOException
-  {
-    return open( indexPath, true, indexDivisor );
-  }
-
-  public static Map<String,Searcher> open( String indexPath, boolean trySubDirs, int indexDivisor )
     throws IOException
   {
     if ( indexPath == null ) throw new IllegalArgumentException( "indexPath cannot be null" );
     if ( indexDivisor < 1  ) throw new IllegalArgumentException( "indexDivisor must be >= 1" );
 
-    Map<String,Searcher> searchers = new HashMap<String,Searcher>( );
-
     File indexDir = new File( indexPath );
 
-    try
+    if ( ! indexDir.isDirectory() ) throw new IllegalArgumentException( "indexPath is not a directory: " + indexPath );
+
+    // The map of name->searcher to be returned.
+    Map<String,Searcher> searchers = new HashMap<String,Searcher>( );
+
+    // If there are no sub-dirs, then try to open this directory as an index.
+    File[] subDirs = indexDir.listFiles( DIR_FILTER );
+    
+    if ( subDirs == null || subDirs.length == 0 )
       {
         IndexSearcher searcher = new IndexSearcher( IndexReader.open( new NIOFSDirectory( indexDir ), true ) );
-
+        
         searchers.put( "", searcher );
+        
+        return searchers;
       }
-    catch ( IOException ioe )
+
+    // There are sub-dirs.  Try opening each as a subSearcher.
+    Searchable subSearchers[] = new Searchable[subDirs.length];
+    for ( int i = 0 ; i < subDirs.length ; i++ )
       {
-        if ( ! trySubDirs )
-          {
-            // If we're not checking for sub-dirs, then throw the original exception.
-            throw ioe;
-          }
-
-        // Let's try opening sub-dirs as indexes.
-        File[] subDirs = indexDir.listFiles( DIR_FILTER );
+        File subDir = subDirs[i];
         
-        if ( subDirs == null || subDirs.length == 0 ) throw new IllegalArgumentException( "No sub-dirs for: " + indexPath );
+        IndexSearcher subSearcher = new IndexSearcher( openIndexReader( subDir ) );
         
-        Searchable subSearchers[] = new Searchable[subDirs.length];
-        for ( int i = 0 ; i < subDirs.length ; i++ )
-          {
-            File subDir = subDirs[i];
-
-            // IndexSearcher searcher = new IndexSearcher( IndexReader.open( new NIOFSDirectory( subDir ), true ) );
-            Searcher searcher = subsearcher( subDir );
-            
-            searchers.put( subDir.getName( ), searcher );
-
-            subSearchers[i] = searcher;
-          }
-
-        // Finally, we create a single MultiSearcher that spans all
-        // the others.  Put it in the map with a key of "".
-        MultiSearcher multi = new MultiSearcher( subSearchers );
-
-        searchers.put( "", multi );
+        searchers.put( subDir.getName( ), subSearcher );
+        
+        subSearchers[i] = subSearcher;
       }
+    
+    // Finally, we create a single MultiSearcher that spans all
+    // the others.  Put it in the map with a key of "".
+    MultiSearcher multi = new MultiSearcher( subSearchers );
+    
+    searchers.put( "", multi );
 
     return searchers;
   }
 
-  public static Searcher subsearcher( File directory )
+  /**
+   * Opens an IndexReader for the given directory.  The directory may
+   * be a plain-old Lucene index, a parallel index, or a root
+   * directory of index shards.  In the case of shards, this method is
+   * called recursively to open the sub-indexes and combine them into
+   * a MultiReader.
+   */
+  public static IndexReader openIndexReader( File directory )
     throws IOException
   {
+    if ( directory == null          ) throw new IllegalArgumentException( "directory cannot be null" );
     if ( ! directory.isDirectory( ) ) throw new IllegalArgumentException( "not a directory: " + directory );
 
     File[] subDirs = directory.listFiles( DIR_FILTER );
 
-    // If there are no sub-dirs, just open this as an IndexSearcher
+    // If there are no sub-dirs, just open this as an IndexReader
     if ( subDirs.length == 0 )
       {
-        IndexSearcher searcher = new IndexSearcher( IndexReader.open( new NIOFSDirectory( directory ), true ) );
-        
-        return searcher;
+        return IndexReader.open( new NIOFSDirectory( directory ), true );
       }
-
+    
     // This directory has sub-dirs, and they are parallel.
     if ( directory.listFiles( PARALLEL_FILTER ).length == 1 )
       {
@@ -139,23 +192,18 @@ public class IndexOpener
             preader.add( IndexReader.open( new NIOFSDirectory( subDirs[i] ), true ) );
           }
         
-        IndexSearcher searcher = new IndexSearcher( preader );
-
-        return searcher;
+        return preader;
       }
-
-    // This directory has sub-dirs, but they are not parallel
-    Searchable subSearchers[] = new Searchable[subDirs.length];
-    for ( int i = 0; i < subDirs.length ; i++ )
+    
+    // This directory has sub-dirs, but they are not parallel, so they
+    // are shards.
+    IndexReader[] subReaders = new IndexReader[subDirs.length];
+    for ( int i = 0 ; i < subDirs.length ; i++ )
       {
-        File subDir = subDirs[i];
-        
-        Searcher searcher = subsearcher( subDir );
-
-        subSearchers[i] = searcher;
+        subReaders[i] = openIndexReader( subDirs[i] );
       }
 
-    MultiSearcher multi = new MultiSearcher( subSearchers );
+    IndexReader multi = new MultiReader( subReaders, true );
 
     return multi;
   }
