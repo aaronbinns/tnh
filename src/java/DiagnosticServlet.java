@@ -40,7 +40,7 @@ import org.apache.lucene.search.highlight.*;
  *    &lt;/index>
  * &lt;/info>
  *
- * The list of indexes and fields to emit ar controlled via URL
+ * The list of indexes and fields to emit are controlled via URL
  * parameters <code>i</code> and <code>f</code> respectively.  E.g.
  * <code>http://localhost/info?i=foo&amp;f=date</code>
  *
@@ -56,7 +56,7 @@ import org.apache.lucene.search.highlight.*;
  */
 public class DiagnosticServlet extends HttpServlet
 {
-  public static final Logger LOG = Logger.getLogger( OpenSearchServlet.class.getName() );
+  public static final Logger LOG = Logger.getLogger( DiagnosticServlet.class.getName() );
 
   public void doGet( HttpServletRequest request, HttpServletResponse response )
     throws ServletException, IOException
