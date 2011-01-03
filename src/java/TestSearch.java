@@ -128,7 +128,7 @@ public class TestSearch
 
     long responseTime = System.nanoTime( );
 
-    Map<String,Searcher> searchers = IndexOpener.open( indexDir, true, indexDivisor );
+    Map<String,Searcher> searchers = IndexOpener.open( indexDir, indexDivisor );
 
     Searcher searcher = searchers.get( indexName );
     if ( searcher == null ) throw new IllegalArgumentException( "Specified index not found: \"" + indexName + "\"" );
