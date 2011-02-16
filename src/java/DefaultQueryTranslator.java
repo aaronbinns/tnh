@@ -43,6 +43,10 @@ public class DefaultQueryTranslator
     List<String> terms = new ArrayList<String>( 8 );
     List<String> minus = new ArrayList<String>( 8 );
 
+    // Replace "smart quotes" with " so phrases can be detected using
+    // either.
+    query = query.replace( '“', '"' ).replace( '”', '"' );
+
     Matcher m = TOKENIZER.matcher( query );
 
     while ( m.find( ) )
