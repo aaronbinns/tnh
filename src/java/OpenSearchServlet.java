@@ -148,7 +148,7 @@ public class OpenSearchServlet extends HttpServlet
         for ( int i = p.start ; i < end ; i++ )
           {
             org.apache.lucene.document.Document hit = result.searcher.doc( result.hits[i].id );
-
+            
             Element item = JDOMHelper.add( channel, "item" );
 
             // Replace & and < with their XML entity counterparts to
@@ -169,7 +169,10 @@ public class OpenSearchServlet extends HttpServlet
             JDOMHelper.add( item, OpenSearchHelper.NS_ARCHIVE, "length",     hit.get( "length" ) );
             JDOMHelper.add( item, OpenSearchHelper.NS_ARCHIVE, "type",       hit.get( "type"   ) );
             JDOMHelper.add( item, OpenSearchHelper.NS_ARCHIVE, "collection", hit.get( "collection" ) );
-            
+
+            String indexName = this.searcher.resolveIndexName( result.searcher, result.hits[i].id );
+            JDOMHelper.add( item, OpenSearchHelper.NS_ARCHIVE, "index",      indexName );
+
             for ( String date : hit.getValues( "date" ) )
               {
                 JDOMHelper.add( item, "date", date );
