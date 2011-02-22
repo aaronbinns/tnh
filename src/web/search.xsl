@@ -21,7 +21,7 @@
      xmlns:archive="http://web.archive.org/-/spec/opensearchrss/1.0/"
 >
 <xsl:output method="text" />
-<xsl:variable name="wayback" select="'http://wayback.archive-it.org'" />
+<xsl:variable name="wayback" select="'http://waybackmachine.org'" />
 
 <xsl:template match="rss/channel">
   &lt;html xmlns="http://www.w3.org/1999/xhtml">
@@ -189,10 +189,14 @@
   </xsl:variable>
   <!-- Define substring to use in constructing the Wayback URL depending on the presence of a collection. -->
   <xsl:variable name="collection">
+    <!-- TODO: Uncomment this if your deployment uses collection-based Wayback deployment -->
+    <!--
     <xsl:choose>
       <xsl:when test="normalize-space(archive:collection)"><xsl:value-of select="concat('/', archive:collection)" /></xsl:when>
+      <xsl:when test="normalize-space(archive:collection) = '' and normalize-space(archive:index)"><xsl:value-of select="concat('/', archive:index)" /></xsl:when>
       <xsl:otherwise><xsl:value-of select="''" /></xsl:otherwise>
     </xsl:choose>
+    -->
   </xsl:variable>
   &lt;li>
   &lt;div class="searchResult">
