@@ -154,6 +154,46 @@ public class Search
     return searcher;
   }
 
+  /**
+   * Given a searcher and a docId, find the corresponding name of the
+   * corresponding index in the searchers map.  Returns the name of
+   * the index, or <code>null</code> if not found.
+   */
+  public String resolveIndexName( Searchable searcher, int docId )
+  {
+    if ( searcher instanceof MultiSearcher )
+      {
+        MultiSearcher ms = (MultiSearcher) searcher;
+        
+        Searchable[] subsearchers = ms.getSearchables();
+        
+        searcher = subsearchers[ms.subSearcher( docId )];
+
+        return resolveIndexName( searcher, docId );
+      }
+    if ( searcher instanceof IndexSearcher )
+      {
+        for ( Map.Entry<String,Searcher> entry : this.searchers.entrySet() )
+          {
+            // System.err.println( "Considering " + entry.getKey() + " (" + entry.getValue() + " ) for result.searcher: " + searcher );
+
+            if ( entry.getValue() == searcher )
+              {
+                // System.err.println( "Result " + docId + " from searcher " + entry.getKey() );
+                
+                return entry.getKey( );
+              }
+          }
+
+        // Didn't find the IndexSearcher.
+        return null;
+      }
+    else
+      {
+        throw new RuntimeException( "Unknown searcher type: " + searcher );
+      }    
+  }
+
   public static class Result
   {
     public Searcher searcher;
