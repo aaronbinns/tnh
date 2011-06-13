@@ -20,6 +20,7 @@
  */
 
 import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.index.FieldInvertState;
 
 /** 
  * Similarity implementatation appropriate for web searching.
@@ -30,8 +31,10 @@ public class WebSimilarity extends DefaultSimilarity
   private static final int MIN_CONTENT_LENGTH = 1000;
   
   /** Normalize field by length.  Called at index time. */
-  public float lengthNorm( String fieldName, int numTokens )
+  public float computeNorm( String fieldName, FieldInvertState state )
   {
+    int numTokens = state.getLength();
+
     if ("url".equals(fieldName))
       {
         // URL: prefer short by using linear normalization
