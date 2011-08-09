@@ -14,6 +14,8 @@
  * permissions and limitations under the License.
  */
 
+package org.archive.tnh;
+
 import java.io.IOException;
 import org.apache.lucene.index.IndexReader;
 

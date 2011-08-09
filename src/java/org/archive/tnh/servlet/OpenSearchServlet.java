@@ -14,6 +14,8 @@
  * permissions and limitations under the License.
  */
 
+package org.archive.tnh.servlet;
+
 import java.io.*;
 import java.util.*;
 import java.util.zip.*;
@@ -28,6 +30,9 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.CompressionTools;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.highlight.*;
+
+import org.archive.tnh.*;
+import org.archive.tnh.nutch.*;
 
 
 public class OpenSearchServlet extends HttpServlet

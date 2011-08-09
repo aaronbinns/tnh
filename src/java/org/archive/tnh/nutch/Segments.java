@@ -14,6 +14,8 @@
  * permissions and limitations under the License.
  */
 
+package org.archive.tnh.nutch;
+
 import java.util.*;
 import java.io.*;
 import java.util.logging.Logger;

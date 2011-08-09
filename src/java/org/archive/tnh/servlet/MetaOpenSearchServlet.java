@@ -14,6 +14,8 @@
  * permissions and limitations under the License.
  */
 
+package org.archive.tnh.servlet;
+
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -24,6 +26,8 @@ import javax.servlet.http.*;
 
 import org.jdom.*;
 import org.jdom.output.XMLOutputter;
+
+import org.archive.tnh.*;
 
 /** 
  * Simple servlet wrapper/interface around MetaOpenSearch.

@@ -14,6 +14,8 @@
  * permissions and limitations under the License.
  */
 
+package org.archive.tnh.tools;
+
 import java.io.*;
 import java.util.*;
 
@@ -23,6 +25,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.util.Version;
 
+import org.archive.tnh.*;
 
 public class TestSearch
 {

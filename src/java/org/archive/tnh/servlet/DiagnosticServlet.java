@@ -14,6 +14,8 @@
  * permissions and limitations under the License.
  */
 
+package org.archive.tnh.servlet;
+
 import java.io.*;
 import java.util.*;
 import java.util.logging.Logger;
@@ -26,6 +28,8 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.search.highlight.*;
+
+import org.archive.tnh.*;
 
 /**
  * Simple servlet which emits diagnostic info via an XML Document of

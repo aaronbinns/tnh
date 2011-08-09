@@ -19,6 +19,8 @@
  *   governing permissions and limitations under the License.
  */
 
+package org.archive.tnh;
+
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.index.FieldInvertState;
 

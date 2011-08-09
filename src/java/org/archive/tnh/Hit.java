@@ -14,10 +14,12 @@
  * permissions and limitations under the License.
  */
 
+package org.archive.tnh;
+
 /**
  * Simple structure to hold a document ID, score and site.
  */
-class Hit implements Comparable<Hit>
+public class Hit implements Comparable<Hit>
 {
   public int    id;
   public float  score;

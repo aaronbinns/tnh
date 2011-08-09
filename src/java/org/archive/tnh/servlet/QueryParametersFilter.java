@@ -14,11 +14,14 @@
  * permissions and limitations under the License.
  */
 
+package org.archive.tnh.servlet;
+
 import java.io.*;
 import java.util.logging.Logger;
 import javax.servlet.*;
 import javax.servlet.http.*;
 
+import org.archive.tnh.*;
 
 public class QueryParametersFilter implements Filter
 {

@@ -14,21 +14,24 @@
  * permissions and limitations under the License.
  */
 
+package org.archive.tnh;
+
+
 public class QueryParameters
 {
   public static final String[] EMPTY_STRINGS = { };
   public static final String[] ALL_INDEXES   = { "" };
 
-  String   query;
-  int      start;
-  int      hitsPerPage;
-  int      hitsPerSite;
-  String[] sites       = EMPTY_STRINGS;
-  String[] indexNames  = ALL_INDEXES;
-  String[] excludes    = EMPTY_STRINGS;
-  String[] collections = EMPTY_STRINGS;
-  String[] types       = EMPTY_STRINGS;
-  String[] dates       = EMPTY_STRINGS;
+  public String   query;
+  public int      start;
+  public int      hitsPerPage;
+  public int      hitsPerSite;
+  public String[] sites       = EMPTY_STRINGS;
+  public String[] indexNames  = ALL_INDEXES;
+  public String[] excludes    = EMPTY_STRINGS;
+  public String[] collections = EMPTY_STRINGS;
+  public String[] types       = EMPTY_STRINGS;
+  public String[] dates       = EMPTY_STRINGS;
 
   public QueryParameters()
   {

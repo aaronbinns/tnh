@@ -14,6 +14,8 @@
  * permissions and limitations under the License.
  */
 
+package org.archive.tnh;
+
 import org.apache.lucene.search.highlight.Encoder;
 
 /**
