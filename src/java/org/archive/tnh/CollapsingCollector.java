@@ -48,6 +48,11 @@ public class CollapsingCollector extends Collector
       if ( h1.score <  h2.score ) return -1;
       if ( h1.score >  h2.score ) return 1;
 
+      // If two docs have same score, then rank lower docIds *first*,
+      // to match default Lucene behavior.
+      if ( h2.id < h1.id ) return -1;
+      if ( h2.id > h1.id ) return 1;
+
       // must be equal
       return 0;
     }
@@ -180,8 +185,8 @@ public class CollapsingCollector extends Collector
       }
 
     // We have an existing Hit from the same site which can be
-    // replaced *if* the candidate's score is better.
-    if ( candidate.score > this.sortedBySite[sitePos].score )
+    // replaced *if* the candidate's score is equal or better.
+    if ( candidate.score >= this.sortedBySite[sitePos].score )
       {
         this.numCandidatesPassSite++;
         
@@ -213,7 +218,7 @@ public class CollapsingCollector extends Collector
    * For hitsPerSite == 0, just return -1.
    * For hitsPerSite &gt; 0, we return the position of the lowest-scoring
    * Hit for the candidate site, *if and only if* the number of hits
-   * from that site is at the maxiumum number allowed.  Otherwise,
+   * from that site is at the maximum number allowed.  Otherwise,
    * we can still allow more hits from the candidate site, so we
    * return -1.
    */
