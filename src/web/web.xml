@@ -23,7 +23,7 @@
 <!-- For stand-alone search, use the following -->
 <servlet>
   <servlet-name>OpenSearch</servlet-name>
-  <servlet-class>OpenSearchServlet</servlet-class>
+  <servlet-class>org.archive.tnh.servlet.OpenSearchServlet</servlet-class>
   <init-param>
     <param-name>index</param-name>
     <param-value></param-value>
@@ -37,7 +37,7 @@
 
 <servlet>
   <servlet-name>Diagnostics</servlet-name>
-  <servlet-class>DiagnosticServlet</servlet-class>
+  <servlet-class>org.archive.tnh.servlet.DiagnosticServlet</servlet-class>
 </servlet>
 
 <servlet-mapping>
@@ -49,7 +49,7 @@
 <!--
 <servlet>
   <servlet-name>OpenSearch</servlet-name>
-  <servlet-class>MetaOpenSearchServlet</servlet-class>
+  <servlet-class>org.archive.tnh.servlet.MetaOpenSearchServlet</servlet-class>
   <init-param>
     <param-name>remotes</param-name>
     <param-value>remotes.txt</param-value>
@@ -62,7 +62,7 @@
 
 <filter>
   <filter-name>Cache Settings</filter-name>
-  <filter-class>CacheSettingsFilter</filter-class>
+  <filter-class>org.archive.tnh.servlet.CacheSettingsFilter</filter-class>
   <init-param>
     <param-name>max-age</param-name>
     <param-value>259200</param-value>  <!-- 72 hours (in seconds) -->
@@ -71,7 +71,7 @@
 
 <filter>
   <filter-name>XSLT Filter</filter-name>
-  <filter-class>XSLTFilter</filter-class>
+  <filter-class>org.archive.tnh.servlet.XSLTFilter</filter-class>
   <init-param>
     <param-name>xslt</param-name>
     <param-value>search.xsl</param-value>
