@@ -35,7 +35,7 @@ public class JDOMHelper
   public static final String NS_ARCHIVE    = "http://web.archive.org/-/spec/opensearchrss/1.0/";
 
   /** 
-   * Convenience funtion to create a new JDOM Element and add it to the parent.
+   * Convenience function to create a new JDOM Element and add it to the parent.
    */
   public static Element add( Element parent, String name )
   {
@@ -46,7 +46,7 @@ public class JDOMHelper
   }
 
   /** 
-   * Convenience funtion to create a new JDOM Element and add it to the parent.
+   * Convenience function to create a new JDOM Element and add it to the parent.
    */
   public static Element add( Element parent, String name, String value )
   {
@@ -60,7 +60,7 @@ public class JDOMHelper
   }
 
   /** 
-   * Convenience funtion to create a new JDOM Element and add it to the parent.
+   * Convenience function to create a new JDOM Element and add it to the parent.
    */
   public static Element add( Element parent, String namespaceUri, String name, String value )
   {
@@ -73,7 +73,7 @@ public class JDOMHelper
   }
 
   /** 
-   * Convenience funtion to create a new JDOM Element and add it to the parent.
+   * Convenience function to create a new JDOM Element and add it to the parent.
    */
   public static Element add( Element parent, Namespace ns, String name, String value )
   {
