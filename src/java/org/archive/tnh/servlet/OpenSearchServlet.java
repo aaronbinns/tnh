@@ -55,7 +55,7 @@ public class OpenSearchServlet extends HttpServlet
   {
     this.hitsPerPage  = ServletHelper.getInitParameter( config, "hitsPerPage",  10, 1 );
     this.hitsPerSite  = ServletHelper.getInitParameter( config, "hitsPerSite",   1, 0 );
-    this.indexDivisor = ServletHelper.getInitParameter( config, "indexDivisor", 10, 1 );
+    this.indexDivisor = ServletHelper.getInitParameter( config, "indexDivisor",  1, 1 );
     this.indexPath    = ServletHelper.getInitParameter( config, "index",    false );
     this.segmentPath  = ServletHelper.getInitParameter( config, "segments", true );
     this.foldAccents  = ServletHelper.getInitParameter( config, "foldAccents", Boolean.TRUE );

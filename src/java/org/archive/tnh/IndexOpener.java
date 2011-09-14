@@ -26,6 +26,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
+import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 
 import org.apache.lucene.index.ArchiveParallelReader;
 
@@ -135,7 +136,7 @@ public class IndexOpener
     
     if ( subDirs == null || subDirs.length == 0 )
       {
-        IndexSearcher searcher = new IndexSearcher( IndexReader.open( new NIOFSDirectory( indexDir ), true ) );
+        IndexSearcher searcher = new IndexSearcher( IndexReader.open( new NIOFSDirectory( indexDir ), new KeepOnlyLastCommitDeletionPolicy(), true, indexDivisor ) );
         
         searchers.put( "", searcher );
         
@@ -148,7 +149,7 @@ public class IndexOpener
       {
         File subDir = subDirs[i];
         
-        IndexSearcher subSearcher = new IndexSearcher( openIndexReader( subDir ) );
+        IndexSearcher subSearcher = new IndexSearcher( openIndexReader( subDir, indexDivisor ) );
         
         searchers.put( subDir.getName( ), subSearcher );
         
@@ -171,7 +172,7 @@ public class IndexOpener
    * called recursively to open the sub-indexes and combine them into
    * a MultiReader.
    */
-  public static IndexReader openIndexReader( File directory )
+  public static IndexReader openIndexReader( File directory, int indexDivisor )
     throws IOException
   {
     if ( directory == null          ) throw new IllegalArgumentException( "directory cannot be null" );
@@ -182,7 +183,7 @@ public class IndexOpener
     // If there are no sub-dirs, just open this as an IndexReader
     if ( subDirs.length == 0 )
       {
-        return IndexReader.open( new NIOFSDirectory( directory ), true );
+        return IndexReader.open( new NIOFSDirectory( directory ), new KeepOnlyLastCommitDeletionPolicy(), true, indexDivisor );
       }
     
     // This directory has sub-dirs, and they are parallel.
@@ -191,7 +192,7 @@ public class IndexOpener
         ArchiveParallelReader preader = new ArchiveParallelReader( );
         for ( int i = 0; i < subDirs.length ; i++ )
           {
-            preader.add( IndexReader.open( new NIOFSDirectory( subDirs[i] ), true ) );
+            preader.add( IndexReader.open( new NIOFSDirectory( subDirs[i] ), new KeepOnlyLastCommitDeletionPolicy(), true, indexDivisor ) );
           }
         
         return preader;
@@ -202,7 +203,7 @@ public class IndexOpener
     IndexReader[] subReaders = new IndexReader[subDirs.length];
     for ( int i = 0 ; i < subDirs.length ; i++ )
       {
-        subReaders[i] = openIndexReader( subDirs[i] );
+        subReaders[i] = openIndexReader( subDirs[i], indexDivisor );
       }
 
     IndexReader multi = new MultiReader( subReaders, true );
