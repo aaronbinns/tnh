@@ -45,6 +45,7 @@ public class OpenSearchServlet extends HttpServlet
   public String  indexPath;
   public String  segmentPath;
   public boolean foldAccents;
+  public boolean explain;
   public Search  searcher;
   
   public DefaultQueryTranslator translator;
@@ -59,6 +60,7 @@ public class OpenSearchServlet extends HttpServlet
     this.indexPath    = ServletHelper.getInitParameter( config, "index",    false );
     this.segmentPath  = ServletHelper.getInitParameter( config, "segments", true );
     this.foldAccents  = ServletHelper.getInitParameter( config, "foldAccents", Boolean.TRUE );
+    this.explain      = ServletHelper.getInitParameter( config, "explain",     Boolean.FALSE );
 
     try
       {
@@ -94,10 +96,10 @@ public class OpenSearchServlet extends HttpServlet
 
         BooleanQuery q = this.translator.translate( p.query, this.foldAccents );
 
-        this.translator.addGroup( q, "site", p.sites );
-        this.translator.addGroup( q, "type", p.types );
-        this.translator.addGroup( q, "collection", p.collections );
-        this.translator.addGroup( q, "date", p.dates );
+        this.translator.addFilterGroup( q, "site", p.sites );
+        this.translator.addFilterGroup( q, "type", p.types );
+        this.translator.addFilterGroup( q, "collection", p.collections );
+        this.translator.addFilterGroup( q, "date", p.dates );
 
         long parseQueryTime = System.nanoTime();
 
@@ -201,6 +203,12 @@ public class OpenSearchServlet extends HttpServlet
               }
 
             JDOMHelper.add( item, "description", buf.toString( ) );
+
+            // Last, but not least, add a hit explanation, if enabled
+            if ( explain )
+              {
+                JDOMHelper.add( item, OpenSearchHelper.NS_ARCHIVE, "explain", result.searcher.explain( q, result.hits[i].id ).toHtml() );
+              }
           }
 
         OpenSearchHelper.addResponseTime( channel, System.nanoTime( ) - responseTime );

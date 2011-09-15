@@ -148,7 +148,7 @@ public class DefaultQueryTranslator
       }
   }
 
-  public void addGroup( BooleanQuery bq, String field, String[] values )
+  public void addFilterGroup( BooleanQuery bq, String field, String[] values )
   {
     if ( values == null || values.length == 0 )
       {
@@ -163,7 +163,10 @@ public class DefaultQueryTranslator
         group.add( q, BooleanClause.Occur.SHOULD );            
       }
 
-    bq.add( group, BooleanClause.Occur.MUST );
+    // Use a ConstantScoreQuery so that the extra terms do not change
+    // the scoring.  In fact, these should probably be implemented as
+    // filters, not queries.
+    bq.add( new ConstantScoreQuery( group ), BooleanClause.Occur.MUST );
   }
 
   public Query buildQuery( String field, String term )
