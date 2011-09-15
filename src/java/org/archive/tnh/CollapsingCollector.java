@@ -43,15 +43,22 @@ public class CollapsingCollector extends Collector
 {
   public static final Comparator<Hit> SCORE_COMPARATOR = new Comparator<Hit>( )
   {
+    /**
+     * This is an *ascending* sort for *score*, so that *lower* scores
+     * are sorted *first*.
+     *
+     * But it is *descending* sort for document id, so that *higher* ids 
+     * are sorted *first*.  I.e. a 
+     */
     public int compare( Hit h1, Hit h2 )
     {
-      if ( h1.score <  h2.score ) return -1;
-      if ( h1.score >  h2.score ) return 1;
+      // System.err.println( "h1: " + h1.id + "," + h1.score + " h2: " + h2.id + "," + h2.score );
 
-      // If two docs have same score, then rank lower docIds *first*,
-      // to match default Lucene behavior.
-      if ( h2.id < h1.id ) return -1;
-      if ( h2.id > h1.id ) return 1;
+      if ( h1.score <  h2.score ) return -1;
+      if ( h1.score >  h2.score ) return  1;
+
+      if ( h1.id < h2.id ) return  1;
+      if ( h1.id > h2.id ) return -1;
 
       // must be equal
       return 0;
@@ -184,9 +191,20 @@ public class CollapsingCollector extends Collector
         return ;
       }
 
-    // We have an existing Hit from the same site which can be
-    // replaced *if* the candidate's score is equal or better.
-    if ( candidate.score >= this.sortedBySite[sitePos].score )
+    // If we have a candidate Hit with the *same* score as the current
+    // Hit for the site, then we replace the docId if the candidate's
+    // docId is lower.  Since we're not changing the scores, no need
+    // to re-sort afterwards.
+    if ( candidate.score == this.sortedBySite[sitePos].score &&
+         candidate.id    <  this.sortedBySite[sitePos].id )
+      {
+        this.numCandidatesPassSite++;
+
+        this.sortedBySite[sitePos].id = candidate.id;
+      }
+    // If the candidate Hit has a *higher* score than the current Hit
+    // for the site, then replace the current with the candidate.
+    else if ( candidate.score > this.sortedBySite[sitePos].score )
       {
         this.numCandidatesPassSite++;
         
