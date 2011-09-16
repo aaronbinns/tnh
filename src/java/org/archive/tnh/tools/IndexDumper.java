@@ -15,10 +15,8 @@
  */
 package org.archive.tnh.tools;
 
-import java.io.File;
-import java.util.Iterator;
-import java.util.Arrays;
-import java.util.Collection;
+import java.io.*;
+import java.util.*;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.ArchiveParallelReader;
@@ -27,74 +25,106 @@ import org.apache.lucene.store.NIOFSDirectory;
 
 public class IndexDumper
 {
+  public enum Action { DUMP, LIST, COUNT };
+  
   public static void main( String[] args ) throws Exception
   {
     if ( args.length < 1 )
       {
         usageAndExit( );
       }
-
-    int offset = 0;
-    if ( args[0].equals( "-l" ) || args[0].equals( "-c" ) )
+    
+    boolean includeDocIds = false;
+    Action action = Action.DUMP;
+    List<String> fields = new ArrayList<String>( );
+    List<String> dirs   = new ArrayList<String>( );
+    int i = 0;
+    for ( ; i < args.length; i++ )
       {
-        offset = 1;
-      }
-    if ( args[0].equals( "-f" ) )
-      {
-        if ( args.length < 2 )
+             if ( args[i].equals( "-l" ) ) action = Action.LIST;
+        else if ( args[i].equals( "-c" ) ) action = Action.COUNT;
+        else if ( args[i].equals( "-d" ) ) includeDocIds = true;
+        else if ( args[i].equals( "-f" ) )
           {
-            System.out.println( "Error: missing argument to -f\n" );
-            usageAndExit( );
+            action = Action.DUMP;
+            if ( args.length - i < 2 ) 
+              {
+                System.out.println( "Error: missing argument to -f\n" );
+                usageAndExit( );
+              }
+            String fieldList = args[++i];
+            fields.addAll( Arrays.asList( fieldList.split(",") ) );
           }
-        offset = 2;
+        else
+          {
+            break;
+          }
       }
-
-    String dirs[] = new String[args.length - offset];
-    System.arraycopy( args, offset, dirs, 0, args.length - offset );
 
     ArchiveParallelReader reader = new ArchiveParallelReader( );
-    for ( String dir : dirs )
+    for ( ; i < args.length ; i++ )
       {
-        reader.add( IndexReader.open( new NIOFSDirectory( new File( dir ) ) ) );
+        reader.add( IndexReader.open( new NIOFSDirectory( new File( args[i] ) ) ) );
       }
 
-    if ( args[0].equals( "-l" ) )
+    switch ( action )
       {
+      case LIST:
         listFields( reader );
-      }
-    else if ( args[0].equals( "-c" ) )
-      {
+        break;
+
+      case COUNT:
         countDocs( reader );
-      }
-    else if ( args[0].equals( "-f" ) )
-      {
-        dumpIndex( reader, args[1] );
-      }
-    else
-      {
-        dumpIndex( reader );
+        break;
+
+      case DUMP:
+        dumpIndex( reader, fields, includeDocIds );
+        break;
       }
   }
   
-  private static void dumpIndex( IndexReader reader, String fieldName ) throws Exception
+  private static void dumpIndex( IndexReader reader, List<String> fields, boolean includeDocIds ) throws Exception
   {
     Collection fieldNames = reader.getFieldNames(IndexReader.FieldOption.ALL);
 
-    if ( ! fieldNames.contains( fieldName ) )
+    // If no fields were specified, then dump them all.
+    if ( fields.size() == 0 )
       {
-        System.out.println( "Field not in index: " + fieldName );
-        System.exit( 2 );
+        fields.addAll( fieldNames );
+      }
+    else
+      {
+        for ( String field : fields )
+          {
+            if ( ! fieldNames.contains( field ) )
+              {
+                System.out.println( "Field not in index: " + field);
+                System.exit( 2 );
+              }
+          }
       }
 
     int numDocs = reader.numDocs();
     
-    for (int i = 0; i < numDocs; i++)
+    for ( int i = 0; i < numDocs; i++ )
     {
-      System.out.println( Arrays.toString( reader.document(i).getValues( (String) fieldName ) ) );
+      if ( includeDocIds )
+        {
+          System.out.print( i + "\t" );
+        }
+
+      for ( String field : fields )
+        {
+          System.out.print( Arrays.toString( reader.document(i).getValues( field ) ) );
+          System.out.print( "\t" );
+        }
+
+      System.out.println();
     }
     
   }
 
+  /*
   private static void dumpIndex( IndexReader reader ) throws Exception
   {
     Object[] fieldNames = reader.getFieldNames(IndexReader.FieldOption.ALL).toArray( );
@@ -119,6 +149,7 @@ public class IndexDumper
       System.out.println();
     }
   }
+  */
   
   private static void listFields( IndexReader reader ) throws Exception
   {
@@ -140,9 +171,10 @@ public class IndexDumper
   {
     System.out.println( "Usage: IndexDumper [option] index1 ... indexN" );
     System.out.println( "Options:" );
-    System.out.println( "  -c                Emit document count" );
-    System.out.println( "  -f <fieldname>    Only dump specified field" );
-    System.out.println( "  -l                List fields in index" );
+    System.out.println( "  -c            Emit document count" );
+    System.out.println( "  -d            Include document numbers in output" );
+    System.out.println( "  -f <fields>   List of fields to dump (comma-separated)" );
+    System.out.println( "  -l            List fields in index" );
     System.exit(1);
   }
 }
