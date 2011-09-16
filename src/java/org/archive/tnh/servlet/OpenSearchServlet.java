@@ -39,6 +39,7 @@ public class OpenSearchServlet extends HttpServlet
 {
   public static final Logger LOG = Logger.getLogger( OpenSearchServlet.class.getName() );
 
+  public int     hitsPerPageMax;
   public int     hitsPerPage;
   public int     hitsPerSite;
   public int     indexDivisor;
@@ -54,13 +55,14 @@ public class OpenSearchServlet extends HttpServlet
   public void init( ServletConfig config )
     throws ServletException
   {
-    this.hitsPerPage  = ServletHelper.getInitParameter( config, "hitsPerPage",  10, 1 );
-    this.hitsPerSite  = ServletHelper.getInitParameter( config, "hitsPerSite",   1, 0 );
-    this.indexDivisor = ServletHelper.getInitParameter( config, "indexDivisor",  1, 1 );
-    this.indexPath    = ServletHelper.getInitParameter( config, "index",    false );
-    this.segmentPath  = ServletHelper.getInitParameter( config, "segments", true );
-    this.foldAccents  = ServletHelper.getInitParameter( config, "foldAccents", Boolean.TRUE );
-    this.explain      = ServletHelper.getInitParameter( config, "explain",     Boolean.FALSE );
+    this.hitsPerPageMax = ServletHelper.getInitParameter( config, "hitsPerPageMax", 50, 1 );
+    this.hitsPerPage    = ServletHelper.getInitParameter( config, "hitsPerPage",    10, this.hitsPerPageMax );
+    this.hitsPerSite    = ServletHelper.getInitParameter( config, "hitsPerSite",     1, 0 );
+    this.indexDivisor   = ServletHelper.getInitParameter( config, "indexDivisor",    1, 1 );
+    this.indexPath      = ServletHelper.getInitParameter( config, "index",    false );
+    this.segmentPath    = ServletHelper.getInitParameter( config, "segments", true );
+    this.foldAccents    = ServletHelper.getInitParameter( config, "foldAccents", Boolean.TRUE );
+    this.explain        = ServletHelper.getInitParameter( config, "explain",     Boolean.FALSE );
 
     try
       {
@@ -173,8 +175,9 @@ public class OpenSearchServlet extends HttpServlet
             JDOMHelper.add( item, OpenSearchHelper.NS_ARCHIVE, "docId",      String.valueOf( result.hits[i].id    ) );
             JDOMHelper.add( item, OpenSearchHelper.NS_ARCHIVE, "score",      String.valueOf( result.hits[i].score ) );
             JDOMHelper.add( item, OpenSearchHelper.NS_ARCHIVE, "site",       result.hits[i].site  );
-            JDOMHelper.add( item, OpenSearchHelper.NS_ARCHIVE, "length",     hit.get( "length" ) );
-            JDOMHelper.add( item, OpenSearchHelper.NS_ARCHIVE, "type",       hit.get( "type"   ) );
+            JDOMHelper.add( item, OpenSearchHelper.NS_ARCHIVE, "length",     hit.get( "length"     ) );
+            JDOMHelper.add( item, OpenSearchHelper.NS_ARCHIVE, "type",       hit.get( "type"       ) );
+            JDOMHelper.add( item, OpenSearchHelper.NS_ARCHIVE, "boost",      hit.get( "boost"      ) );
             JDOMHelper.add( item, OpenSearchHelper.NS_ARCHIVE, "collection", hit.get( "collection" ) );
 
             String indexName = this.searcher.resolveIndexName( result.searcher, result.hits[i].id );
@@ -282,6 +285,11 @@ public class OpenSearchServlet extends HttpServlet
     p.collections= ServletHelper.getParam( request, "c",  QueryParameters.EMPTY_STRINGS );
     p.types      = ServletHelper.getParam( request, "t",  QueryParameters.EMPTY_STRINGS );
     p.dates      = ServletHelper.getParam( request, "d",  QueryParameters.EMPTY_STRINGS );
+
+    if ( p.hitsPerPage > this.hitsPerPageMax )
+      {
+        p.hitsPerPage = this.hitsPerPageMax;
+      }
 
     return p;
   }
