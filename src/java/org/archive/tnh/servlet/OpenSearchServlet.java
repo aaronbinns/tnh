@@ -55,7 +55,7 @@ public class OpenSearchServlet extends HttpServlet
   public void init( ServletConfig config )
     throws ServletException
   {
-    this.hitsPerPageMax = ServletHelper.getInitParameter( config, "hitsPerPageMax", 50, 1 );
+    this.hitsPerPageMax = ServletHelper.getInitParameter( config, "hitsPerPageMax", Integer.MAX_VALUE, 1 );
     this.hitsPerPage    = ServletHelper.getInitParameter( config, "hitsPerPage",    10, this.hitsPerPageMax );
     this.hitsPerSite    = ServletHelper.getInitParameter( config, "hitsPerSite",     1, 0 );
     this.indexDivisor   = ServletHelper.getInitParameter( config, "indexDivisor",    1, 1 );

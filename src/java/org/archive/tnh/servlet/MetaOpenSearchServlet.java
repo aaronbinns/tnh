@@ -39,15 +39,17 @@ public class MetaOpenSearchServlet extends HttpServlet
   MetaOpenSearch meta;
 
   int timeout;
+  int hitsPerPageMax;
   int hitsPerPage;
   int hitsPerSite;
 
   public void init( ServletConfig config )
     throws ServletException 
   {
-    this.timeout     = ServletHelper.getInitParameter( config, "timeout",      0,  0 );
-    this.hitsPerPage = ServletHelper.getInitParameter( config, "hitsPerPage", 10,  1 );
-    this.hitsPerSite = ServletHelper.getInitParameter( config, "hitsPerSite",  1,  0 );
+    this.timeout        = ServletHelper.getInitParameter( config, "timeout",         0,  0 );
+    this.hitsPerSite    = ServletHelper.getInitParameter( config, "hitsPerSite",     1,  0 );
+    this.hitsPerPage    = ServletHelper.getInitParameter( config, "hitsPerPage",    10,  1 );
+    this.hitsPerPageMax = ServletHelper.getInitParameter( config, "hitsPerPageMax", Integer.MAX_VALUE, 1 );
 
     try
       {
@@ -100,6 +102,11 @@ public class MetaOpenSearchServlet extends HttpServlet
     p.types      = ServletHelper.getParam( request, "t", QueryParameters.EMPTY_STRINGS );
     p.dates      = ServletHelper.getParam( request, "d", QueryParameters.EMPTY_STRINGS );
     
+    if ( p.hitsPerPage > this.hitsPerPageMax )
+      {
+        p.hitsPerPage = this.hitsPerPageMax;
+      }
+
     return p;
   }
 
