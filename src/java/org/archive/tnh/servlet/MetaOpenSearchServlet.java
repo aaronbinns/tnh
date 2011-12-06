@@ -39,9 +39,10 @@ public class MetaOpenSearchServlet extends HttpServlet
   MetaOpenSearch meta;
 
   int timeout;
-  int hitsPerPageMax;
-  int hitsPerPage;
   int hitsPerSite;
+  int hitsPerPage;
+  int hitsPerPageMax;
+  int positionMax;
 
   public void init( ServletConfig config )
     throws ServletException 
@@ -50,6 +51,7 @@ public class MetaOpenSearchServlet extends HttpServlet
     this.hitsPerSite    = ServletHelper.getInitParameter( config, "hitsPerSite",     1,  0 );
     this.hitsPerPage    = ServletHelper.getInitParameter( config, "hitsPerPage",    10,  1 );
     this.hitsPerPageMax = ServletHelper.getInitParameter( config, "hitsPerPageMax", Integer.MAX_VALUE, 1 );
+    this.positionMax    = ServletHelper.getInitParameter( config, "positionMax",    Integer.MAX_VALUE, 1 );
 
     try
       {
@@ -101,10 +103,18 @@ public class MetaOpenSearchServlet extends HttpServlet
     p.collections= ServletHelper.getParam( request, "c", QueryParameters.EMPTY_STRINGS );
     p.types      = ServletHelper.getParam( request, "t", QueryParameters.EMPTY_STRINGS );
     p.dates      = ServletHelper.getParam( request, "d", QueryParameters.EMPTY_STRINGS );
-    
+
+    // If the request is for too many hits per page, limit it.
     if ( p.hitsPerPage > this.hitsPerPageMax )
       {
         p.hitsPerPage = this.hitsPerPageMax;
+      }
+
+    // If the resquest start position is beyond the limit, roll it
+    // back.
+    if ( p.start > ( this.positionMax - p.hitsPerPage ) )
+      {
+        p.start = this.positionMax - p.hitsPerPage;
       }
 
     return p;
