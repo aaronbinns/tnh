@@ -52,8 +52,6 @@ public class CollapsingCollector extends Collector
      */
     public int compare( Hit h1, Hit h2 )
     {
-      // System.err.println( "h1: " + h1.id + "," + h1.score + " h2: " + h2.id + "," + h2.score );
-
       if ( h1.score <  h2.score ) return -1;
       if ( h1.score >  h2.score ) return  1;
 
@@ -97,6 +95,8 @@ public class CollapsingCollector extends Collector
   final Hit[] sortedByScore;
   final Hit[] sortedBySite;
   final Hit   candidate;
+  
+  int lowestHitPosition;
  
   int numUncollapsedHits     = 0;
   int numCandidatesPassScore = 0;
@@ -126,6 +126,8 @@ public class CollapsingCollector extends Collector
       }
 
     this.candidate = new Hit( -1, Float.NEGATIVE_INFINITY, "" );
+
+    this.lowestHitPosition = maxNumResults - 1;
   }
 
   public boolean acceptsDocsOutOfOrder( )
@@ -153,7 +155,7 @@ public class CollapsingCollector extends Collector
     this.candidate.id    = this.docBase + docId;
     this.candidate.score = this.scorer.score( );
 
-    if ( this.candidate.score <= this.sortedByScore[0].score )
+    if ( lowestHitPosition == 0 && ( this.candidate.score <= this.sortedByScore[0].score ) )
       {
         this.numCandidatesFailScore++;
 
@@ -168,23 +170,24 @@ public class CollapsingCollector extends Collector
     int sitePos = findReplacementPosition( candidate );
 
     // No existing hit to be replaced, so we replace the overall
-    // lowest-scoring one, which is always in position 0 in the
-    // sortedByScore list.
+    // lowest-scoring one in the current lowestHitPosition.
     if ( sitePos < 0 )
       {
-        this.sortedByScore[0].id    = candidate.id;
-        this.sortedByScore[0].score = candidate.score;
-        this.sortedByScore[0].site  = candidate.site;
+        this.sortedByScore[this.lowestHitPosition].id    = candidate.id;
+        this.sortedByScore[this.lowestHitPosition].score = candidate.score;
+        this.sortedByScore[this.lowestHitPosition].site  = candidate.site;
+
+        if ( lowestHitPosition > 0 ) lowestHitPosition--;
 
         this.numCandidatesPassScore++;
 
         // Since we just added a new document, re-sort them by score.
-        Arrays.sort( this.sortedByScore, SCORE_COMPARATOR );
+        Arrays.sort( this.sortedByScore, this.lowestHitPosition, this.sortedByScore.length, SCORE_COMPARATOR );
 
         // If we are collapsing, re-sort by site too.
         if ( this.hitsPerSite != 0 )
           {
-            Arrays.sort( this.sortedBySite, SITE_COMPARATOR_TOTAL );
+            Arrays.sort( this.sortedBySite, this.lowestHitPosition, this.sortedBySite.length, SITE_COMPARATOR_TOTAL );
           }
 
         // Done!
@@ -212,7 +215,7 @@ public class CollapsingCollector extends Collector
         this.sortedBySite[sitePos].score = this.candidate.score;
         
         // We have to re-sort by scores.
-        Arrays.sort( this.sortedByScore, SCORE_COMPARATOR );
+        Arrays.sort( this.sortedByScore, this.lowestHitPosition, this.sortedByScore.length, SCORE_COMPARATOR );
 
         // If our hitsPerSite > 1, then we have to re-sort by site to
         // ensure that the hit we just inserted is put into the proper
@@ -220,7 +223,7 @@ public class CollapsingCollector extends Collector
         // then the group size == 1 and therefore no need to re-sort.
         if ( this.hitsPerSite > 1 )
           {
-            Arrays.sort( this.sortedBySite, SITE_COMPARATOR_TOTAL );
+            Arrays.sort( this.sortedBySite, this.lowestHitPosition, this.sortedByScore.length, SITE_COMPARATOR_TOTAL );
           }
       }
     else
@@ -314,7 +317,7 @@ public class CollapsingCollector extends Collector
    */
   public int getNumHits( )
   {
-    for ( int i = this.sortedByScore.length - this.maxNumResults ; i < this.sortedByScore.length ; i++ )
+    for ( int i = 0; i < this.sortedByScore.length ; i++ )
       {
         if ( this.sortedByScore[i].score != Float.NEGATIVE_INFINITY )
           {
