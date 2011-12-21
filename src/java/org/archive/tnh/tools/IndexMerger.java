@@ -31,12 +31,16 @@ public class IndexMerger
   {
     if ( args.length < 2 )
       {
-        System.err.println( "IndexMerger [-o|-m] <dest> <source>..." );
+        System.err.println( "IndexMerger [-o|-m|-b <size>] <dest> <source>..." );
         System.exit( 1 );
       }
 
     boolean optimize = false;
     boolean merge    = false;
+
+    // Default size of RAM buffer for merging indexes is max memory - 12MB;
+    double bufsize = (Runtime.getRuntime().maxMemory() / 1024 / 1024) - 12;
+    System.err.println( "bufsize = " + bufsize );
 
     int i = 0;
     for ( ; i < args.length ; i++ )
@@ -49,10 +53,33 @@ public class IndexMerger
           {
             merge = true;
           }
+        else if ( "-b".equals( args[i] ) )
+          {
+            if ( ++i >= args.length )
+              {
+                System.err.println( "Missing ram buffer size, after -b" );
+                System.exit(1);
+              }
+            try
+              {
+                bufsize = Double.parseDouble( args[i] );
+              }
+            catch ( NumberFormatException nfe )
+              {
+                System.err.println( "Invalid parameter, after -b: " + args[i] );
+                System.exit(1);
+              }
+          }
         else
           {
             break ;
           }
+      }
+
+    if ( (args.length - i) < 2 )
+      {
+        System.err.println( "IndexMerger [-o|-m|-b <size>] <dest> <source>..." );
+        System.exit( 1 );
       }
 
     File dest = new File( args[i++] );
@@ -74,11 +101,12 @@ public class IndexMerger
     try
       {
         w = new IndexWriter( new NIOFSDirectory( dest ), null, true, IndexWriter.MaxFieldLength.UNLIMITED );
+        w.setRAMBufferSizeMB(bufsize);
         w.setUseCompoundFile(false);
-        w.addIndexesNoOptimize( d );
+        w.addIndexes( d );
         if ( optimize )
           {
-            w.optimize( );
+            w.optimize();
           }
         w.commit( );
         w.close( );
