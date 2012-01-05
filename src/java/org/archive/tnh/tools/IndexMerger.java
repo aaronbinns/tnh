@@ -24,6 +24,12 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.*;
 
+/**
+ * Handy command-line tool for merging and/or optimizing Lucene
+ * indexes.  The default behavior matches the common
+ * merge/optimization policies at IA; that is, indexes are merged
+ * offline, in one shot.  Also the termIndexInterval is 1.
+ */
 public class IndexMerger
 {
   public static void main( String[] args )
@@ -31,7 +37,7 @@ public class IndexMerger
   {
     if ( args.length < 2 )
       {
-        System.err.println( "IndexMerger [-o|-f|-b <size>|-i <value>] <dest> <source>..." );
+        System.err.println( "IndexMerger [-v|-o|-f|-b <size>|-i <value>] <dest> <source>..." );
         System.exit( 1 );
       }
 
@@ -102,7 +108,7 @@ public class IndexMerger
     if ( (args.length - i) < (2 - (optimize ? 1 : 0)) )
       {
         System.err.println( "Erorr: no source files!" );
-        System.err.println( "IndexMerger [-o|-f|-b <size>|-i <value>] <dest> <source>..." );
+        System.err.println( "IndexMerger [-v|-o|-f|-b <size>|-i <value>] <dest> <source>..." );
         System.exit( 1 );
       }
 
