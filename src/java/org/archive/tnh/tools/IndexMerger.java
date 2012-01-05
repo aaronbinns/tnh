@@ -22,7 +22,7 @@ import java.io.File;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.store.*;
-
+import org.apache.lucene.util.*;
 
 public class IndexMerger
 {
@@ -31,16 +31,18 @@ public class IndexMerger
   {
     if ( args.length < 2 )
       {
-        System.err.println( "IndexMerger [-o|-m|-b <size>] <dest> <source>..." );
+        System.err.println( "IndexMerger [-o|-f|-b <size>|-i <value>] <dest> <source>..." );
         System.exit( 1 );
       }
 
+    boolean verbose  = false;
     boolean optimize = false;
-    boolean merge    = false;
+    boolean force    = false;
 
     // Default size of RAM buffer for merging indexes is max memory - 12MB;
     double bufsize = (Runtime.getRuntime().maxMemory() / 1024 / 1024) - 12;
-    System.err.println( "bufsize = " + bufsize );
+
+    int termIndexInterval = 1;
 
     int i = 0;
     for ( ; i < args.length ; i++ )
@@ -49,9 +51,13 @@ public class IndexMerger
           {
             optimize = true;
           }
-        else if ( "-m".equals( args[i] ) )
+        else if ( "-f".equals( args[i] ) )
           {
-            merge = true;
+            force = true;
+          }
+        else if ( "-v".equals( args[i] ) )
+          {
+            verbose = true;
           }
         else if ( "-b".equals( args[i] ) )
           {
@@ -70,23 +76,41 @@ public class IndexMerger
                 System.exit(1);
               }
           }
+        else if ( "-i".equals( args[i] ) )
+          {
+            if ( ++i >= args.length )
+              {
+                System.err.println( "Missing term index interval value, after -i" );
+                System.exit(1);
+              }
+            try
+              {
+                termIndexInterval = Integer.parseInt( args[i] );
+              }
+            catch ( NumberFormatException nfe )
+              {
+                System.err.println( "Invalid parameter, after -i: " + args[i] );
+                System.exit(1);
+              }
+          }
         else
           {
             break ;
           }
       }
-
-    if ( (args.length - i) < 2 )
+    
+    if ( (args.length - i) < (2 - (optimize ? 1 : 0)) )
       {
-        System.err.println( "IndexMerger [-o|-m|-b <size>] <dest> <source>..." );
+        System.err.println( "Erorr: no source files!" );
+        System.err.println( "IndexMerger [-o|-f|-b <size>|-i <value>] <dest> <source>..." );
         System.exit( 1 );
       }
 
     File dest = new File( args[i++] );
 
-    if ( ! merge && dest.exists( ) )
+    if ( ! force && dest.exists( ) )
       {
-        System.err.println( "Destination exits, use -m to merge.  Dest: " + args[i] );
+        System.err.println( "Destination exits, use -f to force merging into existing index: " + dest );
 
         System.exit( 2 );
       }
@@ -100,10 +124,38 @@ public class IndexMerger
     IndexWriter w = null;
     try
       {
-        w = new IndexWriter( new NIOFSDirectory( dest ), null, true, IndexWriter.MaxFieldLength.UNLIMITED );
-        w.setRAMBufferSizeMB(bufsize);
-        w.setUseCompoundFile(false);
-        w.addIndexes( d );
+        // Allow for all segments to be merged at once by setting the
+        // max suitably high.  Don't use Integer.MAX_VALUE because the
+        // TieredMergePolicy code does arithematic with this value and
+        // will overflow if set to Integer.MAX_VALUE.
+        TieredMergePolicy mergePolicy = new TieredMergePolicy();
+        mergePolicy.setMaxMergeAtOnceExplicit( 1000000 );
+        mergePolicy.setUseCompoundFile( false );
+
+        // Configure the IndexWriter.  Use SerialMergeScheduler so
+        // that the merge/optimize is done all at once, not with
+        // background threads.  Also set the RAM buffer size and the
+        // term interval.
+        IndexWriterConfig config = new IndexWriterConfig( Version.LUCENE_33, null );
+        config.setMergeScheduler( new SerialMergeScheduler() );
+        config.setMergePolicy( mergePolicy );
+        config.setRAMBufferSizeMB( bufsize );
+        config.setTermIndexInterval( termIndexInterval );
+        config.setOpenMode( IndexWriterConfig.OpenMode.CREATE_OR_APPEND );
+
+        w = new IndexWriter( new NIOFSDirectory( dest ), config );
+        
+        if ( verbose )
+          {
+            System.err.println( "bufsize = " + bufsize );
+            w.setInfoStream( System.out );
+          }
+
+        if ( d.length > 0 )
+          {
+            w.addIndexes( d );
+          }
+
         if ( optimize )
           {
             w.optimize();
