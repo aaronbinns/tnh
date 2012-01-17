@@ -28,7 +28,8 @@ import org.apache.lucene.util.*;
  * Handy command-line tool for merging and/or optimizing Lucene
  * indexes.  The default behavior matches the common
  * merge/optimization policies at IA; that is, indexes are merged
- * offline, in one shot.  Also the termIndexInterval is 1.
+ * offline, in one shot.  The termIndexInterval is as in the
+ * IndexWriterConfig, unless over-ridden via command-line option.
  */
 public class IndexMerger
 {
@@ -45,10 +46,13 @@ public class IndexMerger
     boolean optimize = false;
     boolean force    = false;
 
-    // Default size of RAM buffer for merging indexes is max memory - 12MB;
-    double bufsize = (Runtime.getRuntime().maxMemory() / 1024 / 1024) - 12;
+    // Default size of RAM buffer (in MB) for merging indexes is max
+    // memory - 12MB.  The Lucene library aborts if the value is not
+    // "comfortably below 2GB" (whatever that means), so we employ a
+    // limit of 1800MB to prevent the Lucene library from aborting.
+    double bufsize = Math.min( (Runtime.getRuntime().maxMemory() / 1024 / 1024) - 12, 1800 );
 
-    int termIndexInterval = 1;
+    int termIndexInterval = IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL;
 
     int i = 0;
     for ( ; i < args.length ; i++ )
