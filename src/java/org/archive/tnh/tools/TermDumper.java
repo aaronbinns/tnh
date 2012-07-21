@@ -20,7 +20,7 @@ import java.io.*;
 
 import org.apache.lucene.index.*;
 import org.apache.lucene.document.*;
-import org.apache.lucene.store.NIOFSDirectory;
+import org.apache.lucene.store.MMapDirectory;
 
 
 
@@ -75,7 +75,7 @@ public class TermDumper
         String arg = args[i];
         try
           {
-            IndexReader reader = IndexReader.open( new NIOFSDirectory( new File( arg ) ), true );
+            IndexReader reader = IndexReader.open( new MMapDirectory( new File( arg ) ), true );
 
             readers.add( reader );
           }

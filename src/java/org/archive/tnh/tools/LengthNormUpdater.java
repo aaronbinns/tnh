@@ -122,7 +122,7 @@ public class LengthNormUpdater
 
     String pagerankFile = args[pos++];
     
-    IndexReader reader = IndexReader.open( new NIOFSDirectory( new File( args[pos++] ) ), false );
+    IndexReader reader = IndexReader.open( new MMapDirectory( new File( args[pos++] ) ), false );
 
     try
       {

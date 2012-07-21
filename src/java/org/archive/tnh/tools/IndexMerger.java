@@ -128,7 +128,7 @@ public class IndexMerger
     Directory d[] = new Directory[args.length-i];
     for ( int j = i ; j < args.length ; j++ )
       {
-        d[j-i] = new NIOFSDirectory( new File( args[j] ) );
+        d[j-i] = new MMapDirectory( new File( args[j] ) );
       }
 
     IndexWriter w = null;
@@ -153,7 +153,7 @@ public class IndexMerger
         config.setTermIndexInterval( termIndexInterval );
         config.setOpenMode( IndexWriterConfig.OpenMode.CREATE_OR_APPEND );
 
-        w = new IndexWriter( new NIOFSDirectory( dest ), config );
+        w = new IndexWriter( new MMapDirectory( dest ), config );
         
         if ( verbose )
           {

@@ -23,7 +23,7 @@ import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Searchable;
 import org.apache.lucene.search.MultiSearcher;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.store.NIOFSDirectory;
+import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
@@ -136,7 +136,7 @@ public class IndexOpener
     
     if ( subDirs == null || subDirs.length == 0 )
       {
-        IndexSearcher searcher = new IndexSearcher( IndexReader.open( new NIOFSDirectory( indexDir ), new KeepOnlyLastCommitDeletionPolicy(), true, indexDivisor ) );
+        IndexSearcher searcher = new IndexSearcher( IndexReader.open( new MMapDirectory( indexDir ), new KeepOnlyLastCommitDeletionPolicy(), true, indexDivisor ) );
         
         searchers.put( "", searcher );
         
@@ -183,7 +183,7 @@ public class IndexOpener
     // If there are no sub-dirs, just open this as an IndexReader
     if ( subDirs.length == 0 )
       {
-        return IndexReader.open( new NIOFSDirectory( directory ), new KeepOnlyLastCommitDeletionPolicy(), true, indexDivisor );
+        return IndexReader.open( new MMapDirectory( directory ), new KeepOnlyLastCommitDeletionPolicy(), true, indexDivisor );
       }
     
     // This directory has sub-dirs, and they are parallel.
@@ -192,7 +192,7 @@ public class IndexOpener
         ArchiveParallelReader preader = new ArchiveParallelReader( );
         for ( int i = 0; i < subDirs.length ; i++ )
           {
-            preader.add( IndexReader.open( new NIOFSDirectory( subDirs[i] ), new KeepOnlyLastCommitDeletionPolicy(), true, indexDivisor ) );
+            preader.add( IndexReader.open( new MMapDirectory( subDirs[i] ), new KeepOnlyLastCommitDeletionPolicy(), true, indexDivisor ) );
           }
         
         return preader;

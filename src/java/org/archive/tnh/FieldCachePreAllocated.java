@@ -27,7 +27,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.TermEnum;
-import org.apache.lucene.store.NIOFSDirectory;
+import org.apache.lucene.store.MMapDirectory;
 
 
 public class FieldCachePreAllocated implements FieldCache
@@ -126,7 +126,7 @@ public class FieldCachePreAllocated implements FieldCache
       {
         try
           {
-            IndexReader reader = IndexReader.open( new NIOFSDirectory( new File( arg ) ), true );
+            IndexReader reader = IndexReader.open( new MMapDirectory( new File( arg ) ), true );
 
             totalNumDocuments += reader.numDocs( );
 

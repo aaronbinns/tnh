@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.io.File;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.store.NIOFSDirectory;
+import org.apache.lucene.store.MMapDirectory;
 
 
 public class FieldCacheLucene implements FieldCache
@@ -61,7 +61,7 @@ public class FieldCacheLucene implements FieldCache
       {
         try
           {
-            IndexReader reader = IndexReader.open( new NIOFSDirectory( new File( arg ) ), true );
+            IndexReader reader = IndexReader.open( new MMapDirectory( new File( arg ) ), true );
             
             readers.add( reader );
           }

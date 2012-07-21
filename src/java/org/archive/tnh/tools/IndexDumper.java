@@ -20,7 +20,7 @@ import java.util.*;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.ArchiveParallelReader;
-import org.apache.lucene.store.NIOFSDirectory;
+import org.apache.lucene.store.MMapDirectory;
 
 
 public class IndexDumper
@@ -64,7 +64,7 @@ public class IndexDumper
     ArchiveParallelReader reader = new ArchiveParallelReader( );
     for ( ; i < args.length ; i++ )
       {
-        reader.add( IndexReader.open( new NIOFSDirectory( new File( args[i] ) ) ) );
+        reader.add( IndexReader.open( new MMapDirectory( new File( args[i] ) ) ) );
       }
 
     switch ( action )
