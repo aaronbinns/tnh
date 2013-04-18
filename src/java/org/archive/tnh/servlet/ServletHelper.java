@@ -194,15 +194,16 @@ public class ServletHelper
 
   /**
    * Convenience function to get a URL parameter String value,
-   * returning the default if none found.  The empty string is
-   * returned if found, not the default.
+   * returning the default if none found.
    */
   public static String getParam( ServletRequest request, String name, String defaultValue )
   {
     String v = request.getParameter( name );
+
+    v = v == null ? "" : v.trim();
     
-    v = v == null ? defaultValue : v.trim();
-    
+    if ( v.length( ) == 0 ) return defaultValue;
+
     return v;
   }
   
@@ -235,14 +236,35 @@ public class ServletHelper
   /**
    * Convenience function to get all the URL parameter values as a
    * String[].  If no values found (i.e. null), then the default value
-   * is returned.
+   * is returned.  Or if all values are the empty string, the default
+   * value is returned.
    */
   public static String[] getParam( ServletRequest request, String name, String[] defaultValue )
   {
     String[] v = request.getParameterValues( name );
     
-    v = v == null ? defaultValue : v;
-    
+    if ( v == null ) return defaultValue;
+
+    // Eliminate any empty string values from the list.
+    ArrayList<String> l = new ArrayList<String>( v.length );
+    for ( String s : v )
+      {
+        if ( s != null )
+          {
+            s = s.trim();
+
+            if ( s.length() > 0 ) 
+              {
+                l.add( s ) ;
+              }
+          }
+      }
+
+    // If list is empty, return defaultValue
+    if ( l.size() == 0 ) return defaultValue;
+      
+    v = l.toArray( new String[0] );
+
     return v;
   } 
 
