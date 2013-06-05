@@ -142,8 +142,14 @@
       <xsl:text>from &lt;span style=&quot;color: green;&quot;></xsl:text>
       <xsl:value-of select="archive:urlParams/archive:param[@name='s']/@value" />
       <xsl:text>&lt;/span> (return to &lt;a href=&quot;?</xsl:text>
+        <!-- Generate url params, escaping any quotes -->
         <xsl:for-each select="archive:urlParams/archive:param[@name!='s' and @name!='h']">
-          <xsl:value-of select="@name" /><xsl:text>=</xsl:text><xsl:value-of select="@value" />
+          <xsl:value-of select="@name" /><xsl:text>=</xsl:text>
+          <xsl:call-template name="string-replace-all">
+            <xsl:with-param name="text"    select="@value" />
+            <xsl:with-param name="replace" select="'&quot;'"       />
+            <xsl:with-param name="by"      select="'%22'"  />
+          </xsl:call-template>
           <xsl:text>&amp;</xsl:text>
         </xsl:for-each>
       <xsl:text>&quot;>all results&lt;/a>)</xsl:text>
@@ -207,22 +213,23 @@
       <xsl:value-of select="description" />
     &lt;/div>
     &lt;div class="details">
-      <xsl:value-of select="link" /> - <xsl:value-of select="round( archive:length div 1024 )"/>k - <xsl:value-of select="archive:type" />
-    &lt;/div>
-    &lt;div class="dates">
-      <xsl:text>&lt;a</xsl:text><xsl:text> href=&quot;</xsl:text><xsl:value-of select="concat( $wayback, $collection, '/*/', link )" /><xsl:text>&quot;</xsl:text><xsl:text>></xsl:text>
-        <xsl:text>All versions (</xsl:text><xsl:value-of select="count( date )" /><xsl:text>)</xsl:text>
-      <xsl:text>&lt;/a></xsl:text>
+      <xsl:value-of select="link" /> - <xsl:value-of select="round( archive:length div 1024 )"/>k &amp;nbsp;-&amp;nbsp; <xsl:value-of select="archive:type" /> &amp;nbsp;-&amp;nbsp;
       <xsl:if test="not(../archive:urlParams/archive:param[@name='s'])">
-      <xsl:text> - </xsl:text>
-      <xsl:text>&lt;a</xsl:text><xsl:text> href=&quot;</xsl:text>
-        <xsl:value-of select="concat( '?q=',../archive:query,'&amp;s=',archive:site,'&amp;h=0' )"/>
-        <xsl:for-each select="../archive:urlParams/archive:param[@name !='q' and @name!='s' and @name!='h']">
+        <xsl:text>&lt;a</xsl:text><xsl:text> href=&quot;</xsl:text>
+        <!-- Generate url params, escaping any quotes -->
+        <xsl:value-of select="concat( '?s=',archive:site,'&amp;h=0' )"/>
+        <xsl:for-each select="../archive:urlParams/archive:param[@name!='s' and @name!='h']">
           <xsl:text>&amp;</xsl:text>
-          <xsl:value-of select="@name" /><xsl:text>=</xsl:text><xsl:value-of select="@value" />
-        </xsl:for-each><xsl:text>&quot;</xsl:text><xsl:text>></xsl:text>
-        <xsl:text>More from </xsl:text><xsl:value-of select="archive:site" />
-      <xsl:text>&lt;/a></xsl:text>
+          <xsl:value-of select="@name" /><xsl:text>=</xsl:text>
+          <xsl:call-template name="string-replace-all">
+            <xsl:with-param name="text"    select="@value"   />
+            <xsl:with-param name="replace" select="'&quot;'" />
+            <xsl:with-param name="by"      select="'%22'"    />
+          </xsl:call-template>
+        </xsl:for-each>
+        <xsl:text>&quot;></xsl:text>
+        <xsl:text>Only from </xsl:text><xsl:value-of select="archive:site" />
+        <xsl:text>&lt;/a></xsl:text>
       </xsl:if>
     &lt;/div>
   &lt;/div>
@@ -256,10 +263,10 @@
   </xsl:if>
   <!-- Now, emit numbered page links -->
   <xsl:choose>
-    <!-- We are on pages 1-10.  Emit links  -->
-    <xsl:when test="$startPage &lt; 11">
+    <!-- We are on pages 1-5.  Emit links  -->
+    <xsl:when test="$startPage &lt; 6">
       <xsl:choose>
-        <xsl:when test="$lastPage &lt; 21">
+        <xsl:when test="$lastPage &lt; 11">
           <xsl:call-template name="numberedPageLinks" >
             <xsl:with-param name="begin"   select="1"  />
             <xsl:with-param name="end"     select="$lastPage + 1" />
@@ -269,26 +276,26 @@
         <xsl:otherwise>
           <xsl:call-template name="numberedPageLinks" >
             <xsl:with-param name="begin"   select="1"  />
-            <xsl:with-param name="end"     select="21" />
+            <xsl:with-param name="end"     select="11" />
             <xsl:with-param name="current" select="$startPage" />
           </xsl:call-template>
         </xsl:otherwise>
       </xsl:choose>
     </xsl:when>
-    <!-- We are past page 10, but not to the last page yet.  Emit links for 10 pages before and 10 pages after -->
+    <!-- We are past page 5, but not to the last page yet.  Emit links for 10 pages before and 10 pages after -->
     <xsl:when test="$startPage &lt; $lastPage">
       <xsl:choose>
-        <xsl:when test="$lastPage &lt; ($startPage + 11)">
+        <xsl:when test="$lastPage &lt; ($startPage + 6)">
           <xsl:call-template name="numberedPageLinks" >
-            <xsl:with-param name="begin"   select="$startPage - 10" />
+            <xsl:with-param name="begin"   select="$startPage - 5" />
             <xsl:with-param name="end"     select="$lastPage  +  1" />
             <xsl:with-param name="current" select="$startPage"      />
           </xsl:call-template>
         </xsl:when>
         <xsl:otherwise>
           <xsl:call-template name="numberedPageLinks" >
-            <xsl:with-param name="begin"   select="$startPage - 10" />
-            <xsl:with-param name="end"     select="$startPage + 11" />
+            <xsl:with-param name="begin"   select="$startPage - 5" />
+            <xsl:with-param name="end"     select="$startPage + 6" />
             <xsl:with-param name="current" select="$startPage"      />
           </xsl:call-template>
         </xsl:otherwise>
@@ -297,7 +304,7 @@
     <!-- This covers the case where we are on (or past) the last page -->
     <xsl:otherwise>
       <xsl:call-template name="numberedPageLinks" >
-        <xsl:with-param name="begin"   select="$startPage - 10" />
+        <xsl:with-param name="begin"   select="$startPage - 5" />
         <xsl:with-param name="end"     select="$lastPage  + 1"  />
         <xsl:with-param name="current" select="$startPage"      />
       </xsl:call-template>
@@ -355,11 +362,17 @@
   <xsl:param name="linkText" />
   <xsl:text>&lt;a</xsl:text>
     <xsl:text> href=&quot;?</xsl:text>
-      <xsl:for-each select="archive:urlParams/archive:param[@name!='p']">
-        <xsl:value-of select="@name" /><xsl:text>=</xsl:text><xsl:value-of select="@value" />
-        <xsl:text>&amp;</xsl:text>
-      </xsl:for-each>
-      <xsl:text>p=</xsl:text><xsl:value-of select="($pageNum -1) * opensearch:itemsPerPage" />
+    <!-- Generate url params, escaping any quotes -->
+    <xsl:for-each select="archive:urlParams/archive:param[@name!='p']">
+      <xsl:value-of select="@name"/><xsl:text>=</xsl:text>
+      <xsl:call-template name="string-replace-all">
+        <xsl:with-param name="text"    select="@value" />
+        <xsl:with-param name="replace" select="'&quot;'"       />
+        <xsl:with-param name="by"      select="'%22'"  />
+      </xsl:call-template>
+      <xsl:text>&amp;</xsl:text>
+    </xsl:for-each>
+    <xsl:text>p=</xsl:text><xsl:value-of select="($pageNum -1) * opensearch:itemsPerPage" />
     <xsl:text>&quot; ></xsl:text>
     <xsl:value-of select="$linkText" />
   <xsl:text>&lt;/a></xsl:text>
